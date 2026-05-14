@@ -18,7 +18,18 @@ function Write-Log {
         New-Item -ItemType Directory -Path $script:LogDir -Force | Out-Null
     }
 
-    Add-Content -LiteralPath $script:LogFile -Value $line -Encoding UTF8
+    for ($attempt = 1; $attempt -le 5; $attempt++) {
+        try {
+            Add-Content -LiteralPath $script:LogFile -Value $line -Encoding UTF8
+            return
+        } catch {
+            if ($attempt -eq 5) {
+                throw
+            }
+
+            Start-Sleep -Milliseconds 250
+        }
+    }
 }
 
 function Invoke-Git {
