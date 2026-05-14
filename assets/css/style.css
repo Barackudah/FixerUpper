@@ -1,0 +1,591 @@
+﻿* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* The reset above removes default browser spacing and enables a predictable sizing model. */
+
+/*
+    Global CSS variables for the project.
+    They are collected in one place so layout sizes, card dimensions, spacing and the
+    advertising strip can be changed without searching for repeated numbers across the file.
+*/
+:root {
+    /* Shared page width and horizontal spacing for the main content. */
+    --page-width: 1100px;
+    --stripe-inset: 60px;
+    --container-padding-x: var(--stripe-inset);
+
+    /* Product card dimensions and spacing between cards. */
+    --card-width: 273.333px;
+    --card-height: 377px;
+    --card-gap: 40px;
+    --cards-row-width: 900px;
+
+    /* Settings for the decorative dotted divider between sections. */
+    --dots-width: 3px;
+    --dots-step: 7px;
+
+    /* Sizes for advertising banners and logos in the scrolling strip. */
+    --ad-banner-height: 58px;
+    --ad-banner-gap: 58px;
+    --ad-logo-max-width: 112px;
+    --ad-logo-max-height: 42px;
+    --ad-logo-compact-size: 36px;
+}
+
+/* Base page settings: dark background, white text and a fixed minimum layout width. */
+body {
+    font-family: 'Montserrat', sans-serif;
+    background: #333333;
+    color: #ffffff;
+    min-width: 1100px;
+}
+
+/* Navbar: the header uses a three-column CSS Grid for the logo, menu and action icons. */
+nav {
+    background: #333333;
+    padding: 16px 40px;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 40px;
+    width: var(--page-width);
+    margin: 150px auto 0;
+    position: relative;
+}
+
+/* A thin two-color line below the navigation creates a recessed divider effect. */
+nav::after {
+    content: "";
+    position: absolute;
+    left: var(--stripe-inset);
+    right: var(--stripe-inset);
+    bottom: 0;
+    height: 2px;
+    background: linear-gradient(
+        180deg,
+        #1f1f1f 0 1px,
+        #484848 1px 2px
+    );
+}
+
+/* The logo block fixes image height and prevents it from shrinking when nearby columns change. */
+.nav-logo {
+    display: flex;
+    align-items: center;
+    height: 36px;
+    gap: 0;
+    flex-shrink: 0;
+}
+
+/* The logo image keeps its proportions because width is set to auto. */
+.nav-logo img {
+    height: 36px;
+    width: auto;
+    display: block;
+}
+
+/* The main menu is centered between the logo and the action icons. */
+.nav-menu {
+    display: flex;
+    gap: 48px;
+    justify-content: center;
+    align-items: center;
+    height: 36px;
+}
+
+/* Menu links are compact, uppercase and include a smooth hover effect. */
+.nav-menu a {
+    position: relative;
+    display: flex;
+    align-items: center;
+    height: 36px;
+    color: #ffffff;
+    text-decoration: none;
+    font-size: 12px;
+    font-weight: 400;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 0;
+    line-height: 1;
+    transition:
+        color 0.3s ease,
+        opacity 0.3s ease,
+        transform 0.28s ease;
+}
+
+/* On hover, the link moves slightly upward to make the interface feel interactive. */
+.nav-menu a:hover {
+    color: #ffffff;
+    opacity: 0.8;
+    transform: translateY(-4px);
+}
+
+/* Right-side icon group: login, logout, cart and search. */
+.nav-actions {
+    display: flex;
+    gap: 24px;
+    align-items: center;
+    height: 36px;
+    flex-shrink: 0;
+}
+
+/* Each icon is a clickable link with a fixed 12x12 px size. */
+.nav-actions a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 12px;
+    height: 12px;
+    cursor: pointer;
+    position: relative;
+}
+
+/* object-fit keeps PNG icon proportions inside the small container. */
+.nav-actions img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    transition: opacity 0.3s ease;
+}
+
+.nav-actions a:hover img {
+    opacity: 0.8;
+}
+
+/* The green cart counter is placed over the icon with absolute positioning. */
+.cart-badge {
+    position: absolute;
+    top: -5px;
+    left: 15px;
+    background: transparent;
+    color: #7eff00;
+    font-family: 'Agency FB', sans-serif;
+    font-size: 10px;
+    font-weight: 400;
+    padding: 0;
+    line-height: 1;
+    min-width: 0;
+    text-align: center;
+    
+}
+
+/* Main content: the central page area with products, the advertising strip and the footer. */
+.container {
+    position: relative;
+    width: var(--page-width);
+    margin: 0 auto;
+    padding: 34px var(--container-padding-x) 0;
+    min-height: 200px;
+    background: transparent;
+}
+
+/*
+    Background gradient for the top part of the content area.
+    The pseudo-element stays below the cards with z-index: 0, while the cards are placed above it.
+*/
+.container::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: var(--stripe-inset);
+    left: var(--stripe-inset);
+    height: 300px;
+    background: linear-gradient(
+        180deg,
+        #2e2e2e 0%,
+        #333333 100%
+    );
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* Product grid: three equal columns with fixed card widths. */
+.products-grid {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: repeat(3, var(--card-width));
+    justify-content: center;
+    width: 100%;
+    column-gap: var(--card-gap);
+    row-gap: 0;
+}
+
+/*
+    Product card.
+    A flex column allows the bottom price/link block to stay attached to the bottom of the card,
+    even when descriptions have different lengths.
+*/
+.product-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    min-width: 0;
+    min-height: var(--card-height);
+    padding: 15px 15px 19px;
+    overflow: hidden;
+    border-radius: 7px;
+    background: linear-gradient(
+        180deg,
+        #393939 0%,
+        #373737 62%,
+        #313131 100%
+    );
+    box-shadow:
+        0 7px 0 #262626,
+        inset 0 1px 0 rgba(255, 255, 255, 0.02);
+    transition:
+        transform 0.28s ease,
+        box-shadow 0.28s ease,
+        background 0.28s ease;
+}
+
+/* The lower darkening layer improves price and link readability on top of the card background. */
+.product-card::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 98px;
+    background: linear-gradient(
+        180deg,
+        rgba(51, 51, 51, 0) 0%,
+        rgba(45, 45, 45, 0.96) 100%
+    );
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* The hover state visually lifts the card and strengthens its shadow. */
+.product-card:hover {
+    transform: translateY(-8px);
+    box-shadow:
+        0 15px 0 #262626,
+        inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+/* Card content is placed above the decorative darkening layer. */
+.product-media,
+.product-title,
+.product-description,
+.product-footer {
+    position: relative;
+    z-index: 1;
+}
+
+/* The image area aligns PCs to the bottom so products share one visual baseline. */
+.product-media {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    height: 236px;
+    margin-bottom: 17px;
+}
+
+/* Product images scale inside the card without being cropped. */
+.product-media img {
+    display: block;
+    width: auto;
+    max-width: 76%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+/* Product titles have a minimum height so cards in a row keep a consistent rhythm. */
+.product-title {
+    min-height: 42px;
+    color: #ffffff;
+    font-size: 12pt;
+    font-weight: 400;
+    line-height: 1.25;
+    text-align: center;
+}
+
+/* The short description is constrained in height and width so the card footer does not jump. */
+.product-description {
+    max-width: 315px;
+    min-height: 82px;
+    margin: 10px auto 0;
+    color: #b0b0b0;
+    font-size: 9pt;
+    font-weight: 400;
+    line-height: 1.25;
+    text-align: center;
+}
+
+/* The card footer separates the price and the link to opposite sides. */
+.product-footer {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 18px;
+    margin-top: auto;
+}
+
+/*
+    Shared style for the price and the More Info link.
+    The color is created by a gradient that fills the text through background-clip.
+*/
+.product-price,
+/* The details link inherits the decorative price style while remaining clickable. */
+.product-more-info {
+    font-family: 'Agency FB', 'Arial Narrow', sans-serif;
+    font-size: 14pt;
+    font-weight: 600;
+    line-height: 1;
+    text-transform: uppercase;
+    color: transparent;
+    background: linear-gradient(180deg, #bebebe 0%, #ffffff 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    filter: drop-shadow(0 2px 0 #151515);
+    white-space: nowrap;
+}
+
+.product-more-info {
+    text-decoration: none;
+    transition: background 0.22s ease, filter 0.22s ease;
+}
+
+/* On hover, the link turns green to show the user that it is an active action. */
+.product-more-info:hover {
+    background: linear-gradient(180deg, #55c500 0%, #7eff00 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    filter: drop-shadow(0 1px 0 #1f2f12);
+}
+
+/* Decorative dotted line between product rows and the advertising block. */
+.products-dots {
+    position: relative;
+    z-index: 1;
+    width: var(--cards-row-width);
+    height: 1px;
+    margin: var(--card-gap) 0 var(--card-gap);
+    margin-left: auto;
+    margin-right: auto;
+    background: repeating-linear-gradient(
+        90deg,
+        #505050 0 var(--dots-width),
+        transparent var(--dots-width) var(--dots-step)
+    );
+}
+
+/* The second dotted layer creates a dark shadow under the light dots. */
+.products-dots::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 1px;
+    height: 1px;
+    background: repeating-linear-gradient(
+        90deg,
+        #292929 0 var(--dots-width),
+        transparent var(--dots-width) var(--dots-step)
+    );
+    pointer-events: none;
+}
+
+/* Advertising strip with brand logos. */
+.advertising-block {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    height: 135px;
+    margin: calc(var(--card-gap) * -1) auto 70px;
+    overflow: hidden;
+    background: linear-gradient(
+        90deg,
+        rgba(51, 51, 51, 0) 0%,
+        rgba(55, 55, 55, 0.44) 28%,
+        rgba(62, 62, 62, 0.78) 50%,
+        rgba(55, 55, 55, 0.44) 72%,
+        rgba(51, 51, 51, 0) 100%
+    );
+}
+
+/* The lower line of the advertising block fades at the edges thanks to mask-image. */
+.advertising-block::after {
+    content: "";
+    position: absolute;
+    left: 15%;
+    right: 15%;
+    bottom: 0;
+    height: 2px;
+    background: linear-gradient(
+        180deg,
+        #1f1f1f 0 1px,
+        #484848 1px 2px
+    );
+    -webkit-mask-image: linear-gradient(
+        90deg,
+        transparent 0%,
+        #000000 16%,
+        #000000 84%,
+        transparent 100%
+    );
+    mask-image: linear-gradient(
+        90deg,
+        transparent 0%,
+        #000000 16%,
+        #000000 84%,
+        transparent 100%
+    );
+    pointer-events: none;
+}
+
+/* Visible area of the scrolling strip; the mask hides the edges and softens logo entry. */
+.ad-viewport {
+    position: relative;
+    height: 100%;
+    overflow: hidden;
+    -webkit-mask-image: linear-gradient(
+        90deg,
+        transparent 0%,
+        transparent 10%,
+        #000000 50%,
+        transparent 90%,
+        transparent 100%
+    );
+    mask-image: linear-gradient(
+        90deg,
+        transparent 0%,
+        transparent 10%,
+        #000000 50%,
+        transparent 90%,
+        transparent 100%
+    );
+}
+
+/* Track with two identical logo sets; this is the element moved by the animation. */
+.ad-track {
+    display: flex;
+    width: max-content;
+    height: 100%;
+    animation: ad-scroll 26s linear infinite;
+}
+
+/* On hover, the user can pause the movement and inspect a logo comfortably. */
+.ad-viewport:hover .ad-track {
+    animation-play-state: paused;
+}
+
+/* One set of advertising logos. The second identical set in HTML is needed for continuous scrolling. */
+.ad-set {
+    display: flex;
+    align-items: center;
+    gap: var(--ad-banner-gap);
+    flex: 0 0 auto;
+    padding-right: var(--ad-banner-gap);
+}
+
+/* The single-logo container keeps elements in the strip at a consistent height. */
+.ad-banner {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    align-self: center;
+    flex: 0 0 auto;
+    height: var(--ad-banner-height);
+}
+
+/* The link around a logo takes the banner size and removes default underlining. */
+.ad-banner a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: max-content;
+    height: var(--ad-banner-height);
+    text-decoration: none;
+}
+
+/* In the default state, logos are muted and converted to white for a unified style. */
+.ad-banner img {
+    position: relative;
+    z-index: 1;
+    display: block;
+    width: auto;
+    height: auto;
+    max-width: var(--ad-logo-max-width);
+    max-height: var(--ad-logo-max-height);
+    object-fit: contain;
+    object-position: center center;
+    opacity: 0.28;
+    filter: brightness(0) invert(1);
+    transition:
+        opacity 0.35s ease,
+        filter 0.35s ease;
+}
+
+/* On hover, a logo returns to its original colors and becomes more visible. */
+.ad-banner:hover img {
+    opacity: 0.95;
+    filter: none;
+}
+
+/* Compact logos get a square size so they do not break the shared visual line. */
+.ad-banner img.ad-logo-compact {
+    width: var(--ad-logo-compact-size);
+    height: var(--ad-logo-compact-size);
+    max-width: var(--ad-logo-compact-size);
+    max-height: var(--ad-logo-compact-size);
+}
+
+/* The AMD logo is slightly reduced compared with the shared maximum to match the others visually. */
+.ad-banner img.ad-logo-amd {
+    max-width: calc(var(--ad-logo-max-width) * 0.85);
+    max-height: calc(var(--ad-logo-max-height) * 0.85);
+}
+
+/* The Apple logo is moved up by a few pixels for better optical alignment. */
+.ad-banner img.ad-logo-apple {
+    transform: translateY(-4px);
+}
+
+/* The animation moves the track by exactly half its width, where the duplicated logo set begins. */
+@keyframes ad-scroll {
+    from {
+        transform: translateX(0);
+    }
+
+    to {
+        transform: translateX(-50%);
+    }
+}
+
+/* The footer sits below the advertising block and contains the author credit. */
+.site-footer {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    min-height: 160px;
+    padding-top: 0;
+    text-align: center;
+}
+
+/* Footer text uses a muted gradient so it fits the dark metallic theme of the site. */
+.site-footer p {
+    display: inline-block;
+    transform: translateY(-50px);
+    color: transparent;
+    background: linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.34) 0%,
+        rgba(190, 190, 190, 0.3) 100%
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    font-size: 9pt;
+    font-weight: 400;
+    letter-spacing: 0.4px;
+    line-height: 1;
+    text-transform: uppercase;
+    filter: drop-shadow(0 1px 0 #171717);
+}
