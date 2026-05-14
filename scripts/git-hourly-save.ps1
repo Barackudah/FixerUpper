@@ -170,8 +170,12 @@ try {
     $hasUpstream = ($upstreamExitCode -eq 0) -and (-not [string]::IsNullOrWhiteSpace(($upstream -join "")))
 
     if (($remotes -contains $Remote) -and $hasUpstream) {
-        Invoke-Git @("push") | Out-Null
-        Write-Log "Pushed branch '$Branch' to its configured upstream."
+        try {
+            Invoke-Git @("push") | Out-Null
+            Write-Log "Pushed branch '$Branch' to its configured upstream."
+        } catch {
+            Write-Log "Push failed, but local autosave was kept: $($_.Exception.Message)"
+        }
     } elseif ($remotes -contains $Remote) {
         Write-Log "Remote '$Remote' exists, but branch '$Branch' has no upstream yet. Run: git push -u $Remote $Branch"
     } else {
