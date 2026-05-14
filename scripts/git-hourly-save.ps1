@@ -1,7 +1,8 @@
 param(
     [string]$RepoPath = "C:\xampp\htdocs\fixerupper",
     [string]$Remote = "origin",
-    [string]$Branch = ""
+    [string]$Branch = "",
+    [int]$ActivityWindowMinutes = 90
 )
 
 $ErrorActionPreference = "Stop"
@@ -44,6 +45,68 @@ function Invoke-Git {
     return $output
 }
 
+function Get-StatusPath {
+    param([string]$StatusLine)
+
+    if ([string]::IsNullOrWhiteSpace($StatusLine) -or $StatusLine.Length -lt 4) {
+        return ""
+    }
+
+    $path = $StatusLine.Substring(3).Trim()
+
+    if ($path.Contains(" -> ")) {
+        $path = ($path -split " -> ")[-1].Trim()
+    }
+
+    return $path.Trim('"')
+}
+
+function Test-RecentProjectActivity {
+    param(
+        [string]$StatusText,
+        [int]$WindowMinutes
+    )
+
+    if ([string]::IsNullOrWhiteSpace($StatusText)) {
+        return $false
+    }
+
+    $cutoff = (Get-Date).AddMinutes(-1 * $WindowMinutes)
+    $lines = $StatusText -split "(\r\n|\n|\r)" | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
+
+    foreach ($line in $lines) {
+        $state = $line.Substring(0, [Math]::Min(2, $line.Length))
+
+        if ($state.Contains("D")) {
+            return $true
+        }
+
+        $relativePath = Get-StatusPath $line
+        if ([string]::IsNullOrWhiteSpace($relativePath)) {
+            continue
+        }
+
+        $fullPath = Join-Path $RepoPath $relativePath
+
+        if (Test-Path -LiteralPath $fullPath -PathType Leaf) {
+            $item = Get-Item -LiteralPath $fullPath
+            if ($item.LastWriteTime -ge $cutoff) {
+                return $true
+            }
+        } elseif (Test-Path -LiteralPath $fullPath -PathType Container) {
+            $recentFile = Get-ChildItem -LiteralPath $fullPath -Recurse -File -Force |
+                Where-Object { $_.LastWriteTime -ge $cutoff } |
+                Select-Object -First 1
+
+            if ($null -ne $recentFile) {
+                return $true
+            }
+        }
+    }
+
+    return $false
+}
+
 $script:LogDir = Join-Path $RepoPath "logs"
 $script:LogFile = Join-Path $script:LogDir "git-hourly-save.log"
 
@@ -58,6 +121,17 @@ try {
 
     if ([string]::IsNullOrWhiteSpace($Branch)) {
         $Branch = "main"
+    }
+
+    $status = (& git status --porcelain) -join [Environment]::NewLine
+    if ([string]::IsNullOrWhiteSpace($status)) {
+        Write-Log "No project changes found. Autosave skipped."
+        exit 0
+    }
+
+    if (-not (Test-RecentProjectActivity -StatusText $status -WindowMinutes $ActivityWindowMinutes)) {
+        Write-Log "Project changes exist, but no recent activity was detected in the last $ActivityWindowMinutes minutes. Autosave skipped."
+        exit 0
     }
 
     Invoke-Git @("add", "-A") | Out-Null
