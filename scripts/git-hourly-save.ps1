@@ -23,8 +23,15 @@ function Write-Log {
 function Invoke-Git {
     param([string[]]$GitArgs)
 
-    $output = & git @GitArgs 2>&1
-    $exitCode = $LASTEXITCODE
+    $previousErrorActionPreference = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+
+    try {
+        $output = & git @GitArgs 2>&1
+        $exitCode = $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $previousErrorActionPreference
+    }
 
     foreach ($line in $output) {
         Write-Log "git $($GitArgs -join ' '): $line"
@@ -65,9 +72,14 @@ try {
     }
 
     $remotes = (& git remote) -split [Environment]::NewLine
-    if ($remotes -contains $Remote) {
-        Invoke-Git @("push", $Remote, $Branch) | Out-Null
-        Write-Log "Pushed branch '$Branch' to remote '$Remote'."
+    $upstream = & git rev-parse --abbrev-ref "$Branch@{upstream}" 2>$null
+    $hasUpstream = ($LASTEXITCODE -eq 0) -and (-not [string]::IsNullOrWhiteSpace(($upstream -join "")))
+
+    if (($remotes -contains $Remote) -and $hasUpstream) {
+        Invoke-Git @("push") | Out-Null
+        Write-Log "Pushed branch '$Branch' to its configured upstream."
+    } elseif ($remotes -contains $Remote) {
+        Write-Log "Remote '$Remote' exists, but branch '$Branch' has no upstream yet. Run: git push -u $Remote $Branch"
     } else {
         Write-Log "Remote '$Remote' is not configured yet. Changes are saved locally only."
     }
