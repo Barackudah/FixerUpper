@@ -72,8 +72,17 @@ try {
     }
 
     $remotes = (& git remote) -split [Environment]::NewLine
-    $upstream = & git rev-parse --abbrev-ref "$Branch@{upstream}" 2>$null
-    $hasUpstream = ($LASTEXITCODE -eq 0) -and (-not [string]::IsNullOrWhiteSpace(($upstream -join "")))
+    $previousErrorActionPreference = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+
+    try {
+        $upstream = & git rev-parse --abbrev-ref "$Branch@{upstream}" 2>$null
+        $upstreamExitCode = $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $previousErrorActionPreference
+    }
+
+    $hasUpstream = ($upstreamExitCode -eq 0) -and (-not [string]::IsNullOrWhiteSpace(($upstream -join "")))
 
     if (($remotes -contains $Remote) -and $hasUpstream) {
         Invoke-Git @("push") | Out-Null
