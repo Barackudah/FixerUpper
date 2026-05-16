@@ -5,13 +5,13 @@
         Basic page settings:
         - UTF-8 ensures that text and special characters are displayed correctly.
         - viewport keeps page scaling predictable across different screens.
-        - Google Fonts loads Montserrat, which is used throughout the interface.
+        - Google Fonts loads Montserrat and Teko, which are used throughout the interface.
         - style.css contains all visual styling: grids, cards, navigation and advertising animation.
     -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FIXERUPPER</title>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500&family=Teko:wght@600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body>
@@ -82,7 +82,7 @@
                 </p>
                 <div class="product-footer">
                     <span class="product-price">&pound; 3100</span>
-                    <a class="product-more-info" href="#product-1">More Info</a>
+                    <a class="product-more-info" href="#product-1" data-product-id="product-1">More Info</a>
                 </div>
             </article>
 
@@ -97,7 +97,7 @@
                 </p>
                 <div class="product-footer">
                     <span class="product-price">&pound; 1900</span>
-                    <a class="product-more-info" href="#product-2">More Info</a>
+                    <a class="product-more-info" href="#product-2" data-product-id="product-2">More Info</a>
                 </div>
             </article>
 
@@ -112,7 +112,7 @@
                 </p>
                 <div class="product-footer">
                     <span class="product-price">&pound; 2100</span>
-                    <a class="product-more-info" href="#product-3">More Info</a>
+                    <a class="product-more-info" href="#product-3" data-product-id="product-3">More Info</a>
                 </div>
             </article>
         </section>
@@ -132,7 +132,7 @@
                 </p>
                 <div class="product-footer">
                     <span class="product-price">&pound; 1600</span>
-                    <a class="product-more-info" href="#product-4">More Info</a>
+                    <a class="product-more-info" href="#product-4" data-product-id="product-4">More Info</a>
                 </div>
             </article>
 
@@ -146,7 +146,7 @@
                 </p>
                 <div class="product-footer">
                     <span class="product-price">&pound; 1750</span>
-                    <a class="product-more-info" href="#product-5">More Info</a>
+                    <a class="product-more-info" href="#product-5" data-product-id="product-5">More Info</a>
                 </div>
             </article>
 
@@ -160,7 +160,7 @@
                 </p>
                 <div class="product-footer">
                     <span class="product-price">&pound; 2400</span>
-                    <a class="product-more-info" href="#product-6">More Info</a>
+                    <a class="product-more-info" href="#product-6" data-product-id="product-6">More Info</a>
                 </div>
             </article>
         </section>
@@ -268,5 +268,38 @@
             <p>Jurijs Petkevics &copy; 2026</p>
         </footer>
     </main>
+
+    <div class="product-modal" id="product-modal" aria-hidden="true">
+        <div class="product-modal__backdrop" data-modal-close></div>
+        <section class="product-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="modal-product-title">
+            <button class="product-modal__close" type="button" aria-label="Close product details" data-modal-close>x</button>
+            <div class="product-modal__content">
+                <div class="product-modal__visual">
+                    <div class="product-modal__image-stage">
+                        <img id="modal-product-image" class="product-modal__image" src="" alt="">
+                        <div id="modal-product-blank" class="product-modal__blank" hidden></div>
+                    </div>
+                    <div id="modal-product-dots" class="product-modal__dots" aria-label="Product images"></div>
+                </div>
+
+                <div class="product-modal__copy">
+                    <h2 id="modal-product-title" class="visually-hidden"></h2>
+                    <div id="modal-product-text" class="product-modal__text"></div>
+                    <div class="product-modal__scrollbar" aria-hidden="true">
+                        <div class="product-modal__scrollbar-thumb"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="product-modal__actions">
+                <div class="product-modal__actions-inner">
+                    <span id="modal-product-price" class="product-modal__price"></span>
+                    <button class="product-modal__cart" type="button">Add to Cart</button>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script src="assets/js/product-modal.js"></script>
 </body>
 </html>
