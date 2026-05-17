@@ -64,8 +64,9 @@
     -->
     <main class="container">
         <!--
-            First row of product cards.
-            aria-label gives the section a clear name for screen readers because there is no visible heading.
+            Product cards.
+            The divider elements switch at breakpoints: after 3 cards on desktop,
+            after 2 cards on tablet widths, and after every card on mobile.
         -->
         <section class="products-grid" aria-label="Featured products">
             <!--
@@ -86,6 +87,8 @@
                 </div>
             </article>
 
+            <div class="products-dots products-dots--inline products-dots--single-column" aria-hidden="true"></div>
+
             <article class="product-card">
                 <div class="product-media">
                     <!-- onerror loads a fallback image if the specific product image cannot be found. -->
@@ -101,6 +104,8 @@
                 </div>
             </article>
 
+            <div class="products-dots products-dots--inline products-dots--compact-row" aria-hidden="true"></div>
+
             <article class="product-card">
                 <div class="product-media">
                     <!-- The same fallback keeps the card from appearing visually empty. -->
@@ -115,13 +120,9 @@
                     <a class="product-more-info" href="#product-3" data-product-id="product-3">More Info</a>
                 </div>
             </article>
-        </section>
 
-        <!-- Decorative dotted divider between product rows; hidden from screen readers with aria-hidden. -->
-        <div class="products-dots" aria-hidden="true"></div>
+            <div class="products-dots products-dots--inline products-dots--desktop-row products-dots--single-column" aria-hidden="true"></div>
 
-        <!-- The second product row repeats the same structure, making it easy to add more cards. -->
-        <section class="products-grid" aria-label="More featured products">
             <article class="product-card">
                 <div class="product-media">
                     <img src="assets/images/pc_4.png" alt="Ryzen 7 RTX Gaming PC">
@@ -135,6 +136,8 @@
                     <a class="product-more-info" href="#product-4" data-product-id="product-4">More Info</a>
                 </div>
             </article>
+
+            <div class="products-dots products-dots--inline products-dots--compact-row" aria-hidden="true"></div>
 
             <article class="product-card">
                 <div class="product-media">
@@ -150,6 +153,8 @@
                 </div>
             </article>
 
+            <div class="products-dots products-dots--inline products-dots--single-column" aria-hidden="true"></div>
+
             <article class="product-card">
                 <div class="product-media">
                     <img src="assets/images/pc_6.png" alt="Ryzen 9 Workstation PC">
@@ -163,10 +168,9 @@
                     <a class="product-more-info" href="#product-6" data-product-id="product-6">More Info</a>
                 </div>
             </article>
-        </section>
 
-        <!-- Another decorative divider before the advertising block. -->
-        <div class="products-dots" aria-hidden="true"></div>
+            <div class="products-dots products-dots--inline products-dots--desktop-row products-dots--compact-row" aria-hidden="true"></div>
+        </section>
 
         <!--
             Advertising carousel with partner logos.

@@ -110,6 +110,91 @@
     let isDraggingScrollbar = false;
     let dragStartY = 0;
     let dragStartScrollTop = 0;
+    let lockedScrollY = 0;
+    let lastTouchY = 0;
+
+    function canScroll(element, deltaY) {
+        if (!element || element.scrollHeight <= element.clientHeight) {
+            return false;
+        }
+
+        if (deltaY > 0) {
+            return element.scrollTop > 0;
+        }
+
+        if (deltaY < 0) {
+            return element.scrollTop + element.clientHeight < element.scrollHeight - 1;
+        }
+
+        return true;
+    }
+
+    function hasScrollableModalParent(target, deltaY) {
+        let element = target;
+
+        while (element && element !== document.body) {
+            if (element === modal && canScroll(element, deltaY)) {
+                return true;
+            }
+
+            if (element.closest && element.closest(".product-modal") && canScroll(element, deltaY)) {
+                return true;
+            }
+
+            if (element === modal) {
+                break;
+            }
+
+            element = element.parentElement;
+        }
+
+        return false;
+    }
+
+    function preventBackgroundScroll(event) {
+        if (!modal.classList.contains("is-open")) {
+            return;
+        }
+
+        const eventTarget = event.target.closest ? event.target : event.target.parentElement;
+
+        if (!eventTarget || !eventTarget.closest(".product-modal")) {
+            event.preventDefault();
+            return;
+        }
+
+        const deltaY = event.type === "wheel" ? -event.deltaY : event.touches[0].clientY - lastTouchY;
+
+        if (!hasScrollableModalParent(eventTarget, deltaY)) {
+            event.preventDefault();
+        }
+
+        if (event.type === "touchmove") {
+            lastTouchY = event.touches[0].clientY;
+        }
+    }
+
+    function rememberTouchPosition(event) {
+        lastTouchY = event.touches[0].clientY;
+    }
+
+    function lockPageScroll() {
+        lockedScrollY = window.scrollY || document.documentElement.scrollTop || 0;
+        document.documentElement.classList.add("modal-open");
+        document.body.classList.add("modal-open");
+        document.addEventListener("touchstart", rememberTouchPosition, { passive: true });
+        document.addEventListener("touchmove", preventBackgroundScroll, { passive: false });
+        document.addEventListener("wheel", preventBackgroundScroll, { passive: false });
+    }
+
+    function unlockPageScroll() {
+        document.documentElement.classList.remove("modal-open");
+        document.body.classList.remove("modal-open");
+        document.removeEventListener("touchstart", rememberTouchPosition);
+        document.removeEventListener("touchmove", preventBackgroundScroll);
+        document.removeEventListener("wheel", preventBackgroundScroll);
+        window.scrollTo(0, lockedScrollY);
+    }
 
     function getSlides(product) {
         return [
@@ -212,7 +297,7 @@
         renderDots(getSlides(product));
         setSlide(0);
 
-        document.body.classList.add("modal-open");
+        lockPageScroll();
         modal.classList.add("is-open");
         modal.setAttribute("aria-hidden", "false");
         requestScrollbarUpdate();
@@ -221,7 +306,7 @@
     }
 
     function closeModal() {
-        document.body.classList.remove("modal-open");
+        unlockPageScroll();
         modal.classList.remove("is-open");
         modal.setAttribute("aria-hidden", "true");
         modalCopy.classList.remove("has-scroll");

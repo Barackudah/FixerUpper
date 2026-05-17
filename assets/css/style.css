@@ -44,6 +44,10 @@ body {
     width: 100%;
 }
 
+html.modal-open {
+    overflow: hidden;
+}
+
 body.modal-open {
     overflow: hidden;
 }
@@ -409,6 +413,15 @@ nav::after {
     pointer-events: none;
 }
 
+.products-dots--inline {
+    display: none;
+    grid-column: 1 / -1;
+}
+
+.products-dots--desktop-row {
+    display: block;
+}
+
 /* Advertising strip with brand logos. */
 .advertising-block {
     position: relative;
@@ -629,6 +642,7 @@ nav::after {
     padding: 32px;
     pointer-events: none;
     opacity: 0;
+    overscroll-behavior: contain;
     transition: opacity 0.28s ease;
 }
 
@@ -780,6 +794,8 @@ nav::after {
     height: 100%;
     padding: 32px 16px 42px 10px;
     overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
     color: #9f9f9f;
     font-size: 9pt;
     font-weight: 400;
@@ -961,22 +977,43 @@ nav::after {
 
 @media (max-width: 1020px) {
     nav {
-        grid-template-columns: 1fr auto;
-        row-gap: 20px;
+        grid-template-columns: 1fr;
+        justify-items: center;
+        gap: 16px;
         margin-top: 80px;
+        padding-bottom: 18px;
     }
 
     .nav-menu {
-        grid-column: 1 / -1;
+        grid-column: auto;
+        width: 100%;
         justify-content: center;
         flex-wrap: wrap;
         gap: clamp(26px, 6vw, 48px);
         height: auto;
     }
 
+    .nav-actions {
+        justify-content: center;
+        width: 100%;
+    }
+
     .products-grid {
         grid-template-columns: repeat(2, minmax(0, var(--card-width)));
         row-gap: var(--card-gap);
+    }
+
+    .products-grid .products-dots--desktop-row {
+        display: none;
+    }
+
+    .products-grid .products-dots--compact-row {
+        display: block;
+        margin: 0 auto;
+    }
+
+    .advertising-block {
+        margin-top: 0;
     }
 }
 
@@ -1028,6 +1065,12 @@ nav::after {
     .products-dots {
         margin-top: var(--card-gap);
         margin-bottom: var(--card-gap);
+    }
+
+    .products-grid .products-dots--single-column {
+        display: block;
+        grid-column: 1 / -1;
+        margin: 0 auto;
     }
 
     .advertising-block {
