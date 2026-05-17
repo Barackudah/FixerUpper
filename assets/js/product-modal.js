@@ -1,4 +1,25 @@
 (function () {
+    /*
+     * Product modal controller.
+     *
+     * The whole script is wrapped in an immediately invoked function expression
+     * so the variables below stay private and do not leak into the global window
+     * scope. This file is responsible for:
+     * - storing the product data shown in the modal;
+     * - opening and closing the modal from "more info" links;
+     * - rendering the product title, price, image, slider dots and details;
+     * - locking page scroll while the modal is open;
+     * - keeping the custom details scrollbar in sync.
+     */
+
+    /*
+     * Product data used by the modal.
+     *
+     * Each key matches the data-product-id value on a product link in the HTML.
+     * When a visitor clicks a link, openModal() uses that id to find the matching
+     * product object here and then fills the modal with its title, price, image
+     * and details.
+     */
     const products = {
         "product-1": {
             title: "Ultra Threadripper Pro Gaming PC",
@@ -92,6 +113,13 @@
         }
     };
 
+    /*
+     * Cached DOM references.
+     *
+     * These elements are queried once and then reused by the event handlers and
+     * render functions. This keeps the code below focused on updating known modal
+     * pieces instead of searching the page repeatedly.
+     */
     const modal = document.getElementById("product-modal");
     const modalTitle = document.getElementById("modal-product-title");
     const modalImage = document.getElementById("modal-product-image");
@@ -104,6 +132,15 @@
     const modalScrollbarThumb = modal.querySelector(".product-modal__scrollbar-thumb");
     const moreInfoLinks = document.querySelectorAll(".product-more-info[data-product-id]");
 
+    /*
+     * Runtime state for the currently open modal.
+     *
+     * activeProduct and activeSlide describe which product and slide are visible.
+     * lastFocusedElement lets closeModal() return keyboard focus to the link that
+     * opened the modal, which matters for keyboard and screen-reader users. The
+     * remaining values support custom scrollbar dragging and mobile background
+     * scroll locking.
+     */
     let activeProduct = null;
     let activeSlide = 0;
     let lastFocusedElement = null;
@@ -113,6 +150,14 @@
     let lockedScrollY = 0;
     let lastTouchY = 0;
 
+    /*
+     * Checks whether an element can still scroll in the requested direction.
+     *
+     * deltaY uses one shared sign convention for wheel and touch events after
+     * normalization in preventBackgroundScroll():
+     * - positive means the user is moving toward previous content;
+     * - negative means the user is moving toward later content.
+     */
     function canScroll(element, deltaY) {
         if (!element || element.scrollHeight <= element.clientHeight) {
             return false;
@@ -129,6 +174,12 @@
         return true;
     }
 
+    /*
+     * Walks up from the event target and checks whether the action happened
+     * inside a modal area that can handle the scroll. If it can, the browser may
+     * scroll the modal content. If it cannot, the scroll is blocked later so the
+     * page behind the modal does not move.
+     */
     function hasScrollableModalParent(target, deltaY) {
         let element = target;
 
@@ -151,6 +202,14 @@
         return false;
     }
 
+    /*
+     * Prevents the page behind the modal from scrolling.
+     *
+     * Mouse wheel events and mobile touch events describe movement differently,
+     * so this function first normalizes both into deltaY. It then checks whether
+     * the modal itself can scroll. Only scrolls outside the modal, or attempts to
+     * scroll past the modal's own edges, are cancelled.
+     */
     function preventBackgroundScroll(event) {
         if (!modal.classList.contains("is-open")) {
             return;
@@ -174,10 +233,22 @@
         }
     }
 
+    /*
+     * Stores the previous touch position so touchmove can calculate the next
+     * movement direction. This is needed because touchmove does not provide a
+     * ready-made delta value like a wheel event.
+     */
     function rememberTouchPosition(event) {
         lastTouchY = event.touches[0].clientY;
     }
 
+    /*
+     * Locks the background page while the modal is open.
+     *
+     * The current scroll position is saved before modal-open classes and event
+     * listeners are added. unlockPageScroll() restores that position so closing
+     * the modal does not move the visitor to a different part of the page.
+     */
     function lockPageScroll() {
         lockedScrollY = window.scrollY || document.documentElement.scrollTop || 0;
         document.documentElement.classList.add("modal-open");
@@ -187,6 +258,11 @@
         document.addEventListener("wheel", preventBackgroundScroll, { passive: false });
     }
 
+    /*
+     * Removes the scroll lock and deletes the listeners added by
+     * lockPageScroll(). Keeping the lock and unlock logic paired helps avoid
+     * duplicate listeners when the modal is opened more than once.
+     */
     function unlockPageScroll() {
         document.documentElement.classList.remove("modal-open");
         document.body.classList.remove("modal-open");
@@ -196,6 +272,13 @@
         window.scrollTo(0, lockedScrollY);
     }
 
+    /*
+     * Builds the slide list for the image area.
+     *
+     * The first slide shows the real product image. The remaining blank slides
+     * preserve the current carousel and dot structure. They can later be replaced
+     * with real gallery images without rewriting the modal logic.
+     */
     function getSlides(product) {
         return [
             { type: "image", src: product.image, alt: product.title },
@@ -209,6 +292,14 @@
         ];
     }
 
+    /*
+     * Renders the details text for the selected product.
+     *
+     * Product data is local and controlled by the project, so innerHTML is used
+     * here to create the repeated <p><strong>Label:</strong> Value</p> structure.
+     * After rendering, the text panel is reset to the top so each new product
+     * opens from the beginning.
+     */
     function renderDetails(product) {
         modalText.innerHTML = product.details
             .map(([label, value]) => `<p><strong>${label}:</strong> ${value}</p>`)
@@ -216,6 +307,14 @@
         modalText.scrollTop = 0;
     }
 
+    /*
+     * Synchronizes the custom scrollbar with the real text scroll position.
+     *
+     * The modalText panel still uses normal browser scrolling. This function only
+     * changes the size and position of the visual thumb:
+     * - thumb height shows how much of the content is visible;
+     * - thumb position reflects modalText.scrollTop within the full range.
+     */
     function updateCustomScrollbar() {
         const scrollRange = modalText.scrollHeight - modalText.clientHeight;
         const hasScroll = scrollRange > 1;
@@ -237,10 +336,20 @@
         modalScrollbarThumb.style.transform = `translateY(${thumbTop}px)`;
     }
 
+    /*
+     * Schedules a scrollbar update for the next animation frame. This lets the
+     * browser apply recent DOM and class changes before layout values are read.
+     * It is especially useful right after opening the modal or resizing the
+     * window.
+     */
     function requestScrollbarUpdate() {
         window.requestAnimationFrame(updateCustomScrollbar);
     }
 
+    /*
+     * Creates the dot buttons for the carousel. Each button closes over its own
+     * index, so a click can call setSlide(index) directly.
+     */
     function renderDots(slides) {
         modalDots.innerHTML = "";
 
@@ -254,6 +363,13 @@
         });
     }
 
+    /*
+     * Shows the requested slide and updates dot state.
+     *
+     * A slide with type image fills the <img> element. A blank slide hides the
+     * image and shows the placeholder element. aria-current marks the active dot
+     * for assistive technologies.
+     */
     function setSlide(index) {
         if (!activeProduct) {
             return;
@@ -280,6 +396,13 @@
         });
     }
 
+    /*
+     * Opens the modal for the product id from the clicked "more info" link.
+     *
+     * The function updates all modal content first, then locks background scroll,
+     * makes the window visible, schedules a custom scrollbar update and moves
+     * focus to the close button for keyboard users.
+     */
     function openModal(productId) {
         const product = products[productId];
 
@@ -305,6 +428,13 @@
         modal.querySelector(".product-modal__close").focus();
     }
 
+    /*
+     * Closes the modal and returns the page to its previous state.
+     *
+     * Focus returns to the element that opened the window. This lets keyboard
+     * users continue from the same product card instead of being sent back to the
+     * top of the page.
+     */
     function closeModal() {
         unlockPageScroll();
         modal.classList.remove("is-open");
@@ -317,6 +447,12 @@
         }
     }
 
+    /*
+     * Entry points from product cards.
+     *
+     * The link keeps its normal href as an HTML fallback, but JavaScript
+     * intercepts the click and opens the modal instead of navigating away.
+     */
     moreInfoLinks.forEach((link) => {
         link.addEventListener("click", (event) => {
             event.preventDefault();
@@ -324,14 +460,30 @@
         });
     });
 
+    /*
+     * Any element inside the modal with the data-modal-close attribute closes the
+     * window. This lets the close button and any other close controls share the
+     * same behavior.
+     */
     modal.addEventListener("click", (event) => {
         if (event.target.closest("[data-modal-close]")) {
             closeModal();
         }
     });
 
+    /*
+     * Updates the visual scrollbar whenever the details panel scrolls for real:
+     * by mouse wheel, touch gesture, keyboard or another native scrolling method.
+     */
     modalText.addEventListener("scroll", updateCustomScrollbar);
 
+    /*
+     * Custom scrollbar pointer handling.
+     *
+     * Clicking the track moves the details panel closer to the selected position.
+     * Dragging the thumb converts pointer movement into modalText.scrollTop
+     * changes.
+     */
     modalScrollbar.addEventListener("pointerdown", (event) => {
         if (!modalCopy.classList.contains("has-scroll")) {
             return;
@@ -358,6 +510,10 @@
         event.preventDefault();
     });
 
+    /*
+     * While dragging, converts pointer movement along the track into the matching
+     * scroll distance inside the text panel.
+     */
     modalScrollbar.addEventListener("pointermove", (event) => {
         if (!isDraggingScrollbar) {
             return;
@@ -372,6 +528,10 @@
         modalText.scrollTop = dragStartScrollTop + (event.clientY - dragStartY) * scrollPerPixel;
     });
 
+    /*
+     * pointerup and pointercancel both end dragging and release pointer capture.
+     * pointercancel handles cases such as browser gestures or interrupted input.
+     */
     modalScrollbar.addEventListener("pointerup", (event) => {
         isDraggingScrollbar = false;
         modalScrollbar.releasePointerCapture(event.pointerId);
@@ -382,12 +542,19 @@
         modalScrollbar.releasePointerCapture(event.pointerId);
     });
 
+    /*
+     * Escape is the standard key for closing modal windows.
+     */
     document.addEventListener("keydown", (event) => {
         if (event.key === "Escape" && modal.classList.contains("is-open")) {
             closeModal();
         }
     });
 
+    /*
+     * Resizing the window can change the text panel height, so an open modal must
+     * recalculate the thumb size and position.
+     */
     window.addEventListener("resize", () => {
         if (modal.classList.contains("is-open")) {
             requestScrollbarUpdate();

@@ -48,10 +48,12 @@ html.modal-open {
     overflow: hidden;
 }
 
+/* The body lock mirrors the html lock so both desktop and mobile browsers stop background scrolling. */
 body.modal-open {
     overflow: hidden;
 }
 
+/* When a modal is active, the page behind it is blurred and dimmed to keep focus on the dialog. */
 body.modal-open nav,
 body.modal-open .container {
     filter: blur(8px);
@@ -169,6 +171,7 @@ nav::after {
     transition: opacity 0.3s ease;
 }
 
+/* Icon hover feedback stays subtle so the small navigation controls do not distract from products. */
 .nav-actions a:hover img {
     opacity: 0.8;
 }
@@ -413,11 +416,13 @@ nav::after {
     pointer-events: none;
 }
 
+/* Hidden by default; media queries reveal inline dividers between rows on narrower grids. */
 .products-dots--inline {
     display: none;
     grid-column: 1 / -1;
 }
 
+/* Desktop keeps one divider between the product grid and the advertising strip. */
 .products-dots--desktop-row {
     display: block;
 }
@@ -620,6 +625,7 @@ nav::after {
     filter: drop-shadow(0 1px 0 #171717);
 }
 
+/* Accessibility helper: keeps text available to screen readers while removing it visually. */
 .visually-hidden {
     position: absolute;
     width: 1px;
@@ -632,6 +638,11 @@ nav::after {
     border: 0;
 }
 
+/*
+    Product modal overlay.
+    The modal covers the viewport but starts invisible and non-interactive. The .is-open class
+    turns pointer events back on and fades the overlay in, while the dialog itself animates separately.
+*/
 .product-modal {
     position: fixed;
     inset: 0;
@@ -646,17 +657,20 @@ nav::after {
     transition: opacity 0.28s ease;
 }
 
+/* Active modal state: enables clicking inside the overlay and fades the full-screen layer into view. */
 .product-modal.is-open {
     pointer-events: auto;
     opacity: 1;
 }
 
+/* Full-screen dark backdrop behind the product dialog. */
 .product-modal__backdrop {
     position: fixed;
     inset: 0;
     background: rgba(10, 10, 10, 0.72);
 }
 
+/* Dialog shell: kept narrower than the viewport and animated upward from a slightly lowered state. */
 .product-modal__dialog {
     position: relative;
     z-index: 1;
@@ -665,10 +679,12 @@ nav::after {
     transition: transform 0.28s ease;
 }
 
+/* Final open position for the dialog after the overlay becomes active. */
 .product-modal.is-open .product-modal__dialog {
     transform: translateY(0) scale(1);
 }
 
+/* Circular close control positioned just outside the top-right edge of the dialog. */
 .product-modal__close {
     position: absolute;
     top: -14px;
@@ -690,12 +706,18 @@ nav::after {
     transition: color 0.2s ease, background 0.2s ease;
 }
 
+/* Hover and keyboard focus both increase contrast so the close action is easy to discover. */
 .product-modal__close:hover,
 .product-modal__close:focus-visible {
     color: #ffffff;
     background: rgba(20, 20, 20, 0.72);
 }
 
+/*
+    Main modal layout.
+    A two-column grid separates the product visual on the left from the specification text on the right.
+    The border, outer ring and shadows match the raised dark-card style used by the product cards.
+*/
 .product-modal__content {
     display: grid;
     grid-template-columns: minmax(280px, 1fr) minmax(260px, 0.95fr);
@@ -712,6 +734,7 @@ nav::after {
         inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
+/* Left column wrapper: stacks the image stage above the carousel dots. */
 .product-modal__visual {
     display: flex;
     flex-direction: column;
@@ -720,6 +743,7 @@ nav::after {
     padding: 0 12px 6px;
 }
 
+/* Fixed-height image stage keeps the modal from resizing when slides change. */
 .product-modal__image-stage {
     position: relative;
     display: flex;
@@ -729,6 +753,7 @@ nav::after {
     overflow: hidden;
 }
 
+/* Product images scale down to fit the stage without cropping. */
 .product-modal__image {
     display: block;
     width: auto;
@@ -737,6 +762,7 @@ nav::after {
     object-fit: contain;
 }
 
+/* Placeholder panel used for blank gallery slides until more product images are available. */
 .product-modal__blank {
     width: min(250px, 78%);
     aspect-ratio: 4 / 5;
@@ -749,6 +775,7 @@ nav::after {
         0 18px 24px rgba(0, 0, 0, 0.26);
 }
 
+/* Dot row for the modal gallery, centered beneath the image stage. */
 .product-modal__dots {
     display: flex;
     align-items: center;
@@ -757,6 +784,7 @@ nav::after {
     min-height: 26px;
 }
 
+/* Individual gallery dot button with a raised metallic appearance. */
 .product-modal__dot {
     width: 12px;
     height: 12px;
@@ -771,11 +799,13 @@ nav::after {
     transition: transform 0.18s ease, opacity 0.18s ease;
 }
 
+/* The active dot grows slightly so the current slide is visible without adding text. */
 .product-modal__dot.is-active {
     transform: scale(1.1);
     opacity: 1;
 }
 
+/* Right column container for the scrollable product details. */
 .product-modal__copy {
     position: relative;
     height: 350px;
@@ -785,11 +815,17 @@ nav::after {
     background: rgba(35, 35, 35, 0.72);
 }
 
+/* Reserved pseudo-elements are disabled so no legacy decorative overlays affect the text panel. */
 .product-modal__copy::before,
 .product-modal__copy::after {
     content: none;
 }
 
+/*
+    Scrollable details text.
+    Native scrolling remains active for mouse, touch and keyboard users, but browser scrollbars are hidden
+    because the custom scrollbar beside the panel mirrors the real scroll position.
+*/
 .product-modal__text {
     height: 100%;
     padding: 32px 16px 42px 10px;
@@ -817,11 +853,13 @@ nav::after {
     );
 }
 
+/* Hide the native scrollbar in WebKit browsers while preserving scroll behavior. */
 .product-modal__text::-webkit-scrollbar {
     width: 0;
     height: 0;
 }
 
+/* Custom scrollbar track, positioned outside the text panel's right edge. */
 .product-modal__scrollbar {
     position: absolute;
     top: 18px;
@@ -834,11 +872,13 @@ nav::after {
     transition: opacity 0.18s ease;
 }
 
+/* The track is only interactive when JavaScript detects that the text actually overflows. */
 .product-modal__copy.has-scroll .product-modal__scrollbar {
     opacity: 1;
     pointer-events: auto;
 }
 
+/* Draggable scrollbar thumb. JavaScript controls its height and translateY value. */
 .product-modal__scrollbar-thumb {
     position: absolute;
     top: 0;
@@ -853,15 +893,18 @@ nav::after {
         0 1px 2px rgba(0, 0, 0, 0.42);
 }
 
+/* Adds readable spacing between generated detail paragraphs. */
 .product-modal__text p + p {
     margin-top: 13px;
 }
 
+/* Detail labels are brighter than values so the specification list is easier to scan. */
 .product-modal__text strong {
     color: #d7d7d7;
     font-weight: 600;
 }
 
+/* Bottom action row aligns with the same two-column grid as the modal content. */
 .product-modal__actions {
     display: grid;
     grid-template-columns: minmax(280px, 1fr) minmax(260px, 0.95fr);
@@ -870,6 +913,7 @@ nav::after {
     gap: 12px;
 }
 
+/* Price and add-to-cart text are grouped under the visual column. */
 .product-modal__actions-inner {
     display: flex;
     grid-column: 1;
@@ -879,6 +923,7 @@ nav::after {
     padding: 0 18px;
 }
 
+/* Shared metallic text treatment for modal price and cart action. */
 .product-modal__price,
 .product-modal__cart {
     font-family: 'Teko', 'Arial Narrow', sans-serif;
@@ -894,6 +939,7 @@ nav::after {
     white-space: nowrap;
 }
 
+/* Button reset for the cart action while keeping the decorative text styling above. */
 .product-modal__cart {
     justify-self: end;
     padding: 0;
@@ -902,6 +948,7 @@ nav::after {
     transition: background 0.22s ease, filter 0.22s ease;
 }
 
+/* Green hover/focus state matches the More Info links on product cards. */
 .product-modal__cart:hover,
 .product-modal__cart:focus-visible {
     background: linear-gradient(180deg, #55c500 0%, #7eff00 100%);
@@ -910,21 +957,30 @@ nav::after {
     filter: drop-shadow(0 1px 0 #1f2f12);
 }
 
+/*
+    Modal-specific mobile layout.
+    Below 760px the dialog becomes a single-column stack so the image and text panel fit narrow screens
+    without compressing either column too aggressively.
+*/
 @media (max-width: 760px) {
+    /* Allow the whole overlay to scroll if the stacked modal is taller than the viewport. */
     .product-modal {
         align-items: flex-start;
         padding: 24px 18px;
         overflow-y: auto;
     }
 
+    /* Keep the mobile dialog readable while still respecting the viewport width. */
     .product-modal__dialog {
         width: min(430px, 100%);
     }
 
+    /* Pull the close button closer to the dialog on narrow screens. */
     .product-modal__close {
         right: -8px;
     }
 
+    /* Remove the desktop frame so the visual and details panels can stack as separate blocks. */
     .product-modal__content {
         grid-template-columns: 1fr;
         gap: 14px;
@@ -935,6 +991,7 @@ nav::after {
         box-shadow: none;
     }
 
+    /* On mobile, the visual column receives its own card frame because the shared wrapper is removed. */
     .product-modal__visual {
         min-height: 306px;
         padding: 10px 20px 12px;
@@ -947,35 +1004,47 @@ nav::after {
             inset 0 1px 0 rgba(255, 255, 255, 0.08);
     }
 
+    /* Slightly shorter image stage leaves room for text and actions on smaller screens. */
     .product-modal__image-stage {
         height: 270px;
     }
 
+    /* The details panel becomes shorter so the overall modal does not dominate the viewport. */
     .product-modal__copy {
         height: 230px;
         box-shadow: 0 0 0 5px rgba(27, 27, 27, 0.82);
     }
 
+    /* Reduced padding keeps the text readable inside the smaller details panel. */
     .product-modal__text {
         padding: 20px 16px 38px 12px;
     }
 
+    /* The custom scrollbar track follows the shorter mobile text panel. */
     .product-modal__scrollbar {
         top: 14px;
         bottom: 14px;
     }
 
+    /* Actions collapse to one column below the stacked content. */
     .product-modal__actions {
         grid-template-columns: 1fr;
         padding: 12px 12px 0;
     }
 
+    /* Narrower side padding keeps the price and cart action aligned with the mobile cards. */
     .product-modal__actions-inner {
         padding: 0 8px;
     }
 }
 
+/*
+    Tablet layout.
+    The navigation stacks vertically and the product grid becomes two columns once the desktop row can no
+    longer fit comfortably inside the page width.
+*/
 @media (max-width: 1020px) {
+    /* Stack logo, menu and action icons into centered rows. */
     nav {
         grid-template-columns: 1fr;
         justify-items: center;
@@ -984,6 +1053,7 @@ nav::after {
         padding-bottom: 18px;
     }
 
+    /* The menu can wrap instead of shrinking links too tightly. */
     .nav-menu {
         grid-column: auto;
         width: 100%;
@@ -993,36 +1063,48 @@ nav::after {
         height: auto;
     }
 
+    /* Center action icons below the wrapped menu. */
     .nav-actions {
         justify-content: center;
         width: 100%;
     }
 
+    /* Two-card grid for tablet widths. */
     .products-grid {
         grid-template-columns: repeat(2, minmax(0, var(--card-width)));
         row-gap: var(--card-gap);
     }
 
+    /* The desktop-only divider is hidden because row dividers are inserted inside the grid instead. */
     .products-grid .products-dots--desktop-row {
         display: none;
     }
 
+    /* Compact row dividers appear between product rows in the two-column layout. */
     .products-grid .products-dots--compact-row {
         display: block;
         margin: 0 auto;
     }
 
+    /* Remove the negative desktop overlap now that the grid has internal row spacing. */
     .advertising-block {
         margin-top: 0;
     }
 }
 
+/*
+    Phone layout.
+    Product cards collapse to one column, spacing tightens, and decorative areas become shorter so the page
+    remains comfortable on small screens.
+*/
 @media (max-width: 640px) {
+    /* Smaller gaps keep cards and advertising logos from feeling too spread out on phones. */
     :root {
         --card-gap: 34px;
         --ad-banner-gap: 34px;
     }
 
+    /* The header starts closer to the top on short mobile screens. */
     nav {
         grid-template-columns: 1fr;
         justify-items: center;
@@ -1031,52 +1113,63 @@ nav::after {
         padding-bottom: 18px;
     }
 
+    /* Menu links sit closer together in the narrow layout. */
     .nav-menu {
         grid-column: auto;
         width: 100%;
         gap: clamp(16px, 6vw, 24px);
     }
 
+    /* Shorter link height reduces header depth without changing the tap target layout too much. */
     .nav-menu a {
         height: 28px;
         font-size: 12px;
     }
 
+    /* Keeps the icon row visually aligned with the shorter mobile menu links. */
     .nav-actions {
         height: 28px;
     }
 
+    /* Slightly reduced top padding brings the product grid into view sooner. */
     .container {
         padding-top: 28px;
     }
 
+    /* The top background gradient is shorter because the single-column card stack begins higher. */
     .container::before {
         height: 240px;
     }
 
+    /* Single-column product grid with a maximum width that still fits compact phones. */
     .products-grid {
         grid-template-columns: minmax(0, min(100%, 320px));
     }
 
+    /* Responsive image height keeps product art balanced inside narrower cards. */
     .product-media {
         height: clamp(210px, 56vw, 236px);
     }
 
+    /* Divider spacing follows the mobile card gap variable. */
     .products-dots {
         margin-top: var(--card-gap);
         margin-bottom: var(--card-gap);
     }
 
+    /* Single-column dividers appear between every product card group on phones. */
     .products-grid .products-dots--single-column {
         display: block;
         grid-column: 1 / -1;
         margin: 0 auto;
     }
 
+    /* Tighten the space below the logo strip before the footer. */
     .advertising-block {
         margin-bottom: 52px;
     }
 
+    /* Shorter footer keeps the mobile page ending compact. */
     .site-footer {
         min-height: 120px;
     }
