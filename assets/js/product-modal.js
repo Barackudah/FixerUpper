@@ -130,18 +130,22 @@
     const modalCopy = modal.querySelector(".product-modal__copy");
     const modalScrollbar = modal.querySelector(".product-modal__scrollbar");
     const modalScrollbarThumb = modal.querySelector(".product-modal__scrollbar-thumb");
+    const cartButton = modal.querySelector(".product-modal__cart");
+    const cartBadge = document.querySelector(".cart-badge");
     const moreInfoLinks = document.querySelectorAll(".product-more-info[data-product-id]");
 
     /*
      * Runtime state for the currently open modal.
      *
-     * activeProduct and activeSlide describe which product and slide are visible.
+     * activeProduct, activeProductId and activeSlide describe which product and
+     * slide are visible, and which database id should be posted to the cart.
      * lastFocusedElement lets closeModal() return keyboard focus to the link that
      * opened the modal, which matters for keyboard and screen-reader users. The
      * remaining values support custom scrollbar dragging and mobile background
      * scroll locking.
      */
     let activeProduct = null;
+    let activeProductId = null;
     let activeSlide = 0;
     let lastFocusedElement = null;
     let isDraggingScrollbar = false;
@@ -357,6 +361,19 @@
     }
 
     /*
+     * Keeps the cart counter in the navigation synced with the server-side
+     * session cart after a product is added.
+     */
+    function updateCartBadge(count) {
+        if (!cartBadge) {
+            return;
+        }
+
+        const cartCount = Number(count) || 0;
+        cartBadge.textContent = cartCount > 0 ? cartCount : "";
+    }
+
+    /*
      * Creates the dot buttons for the carousel. Each button closes over its own
      * index, so a click can call setSlide(index) directly.
      */
@@ -421,8 +438,13 @@
         }
 
         activeProduct = product;
+        activeProductId = product.id || productId;
         activeSlide = 0;
         lastFocusedElement = document.activeElement;
+
+        if (cartButton) {
+            cartButton.dataset.productId = activeProductId;
+        }
 
         modalTitle.textContent = product.title;
         modalPrice.innerHTML = product.price;
@@ -451,9 +473,54 @@
         modal.setAttribute("aria-hidden", "true");
         modalCopy.classList.remove("has-scroll");
         activeProduct = null;
+        activeProductId = null;
+
+        if (cartButton) {
+            delete cartButton.dataset.productId;
+        }
 
         if (lastFocusedElement) {
             lastFocusedElement.focus();
+        }
+    }
+
+    /*
+     * Adds the open product to the PHP session cart and updates the nav counter
+     * from the JSON response.
+     */
+    async function addActiveProductToCart() {
+        const productId = cartButton ? cartButton.dataset.productId || activeProductId : activeProductId;
+
+        if (!productId || !cartButton) {
+            return;
+        }
+
+        cartButton.disabled = true;
+
+        try {
+            const response = await fetch(window.fixerupperCartEndpoint || "add_to_cart.php", {
+                method: "POST",
+                credentials: "same-origin",
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                body: new URLSearchParams({
+                    product_id: productId,
+                    quantity: "1"
+                })
+            });
+
+            const result = await response.json();
+
+            if (!response.ok || !result.success) {
+                throw new Error(result.message || "Unable to add product to cart.");
+            }
+
+            updateCartBadge(result.cart_count);
+        } catch (error) {
+            console.error(error);
+        } finally {
+            cartButton.disabled = false;
         }
     }
 
@@ -469,6 +536,10 @@
             openModal(link.dataset.productId);
         });
     });
+
+    if (cartButton) {
+        cartButton.addEventListener("click", addActiveProductToCart);
+    }
 
     /*
      * Any element inside the modal with the data-modal-close attribute closes the

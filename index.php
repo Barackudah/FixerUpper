@@ -1,4 +1,7 @@
 <?php
+// Start the session before rendering so the cart badge can reflect the current cart.
+session_start();
+
 require_once __DIR__ . '/config.php';
 
 function e($value)
@@ -71,6 +74,13 @@ if ($productIds) {
 $products = array_values($productsById);
 $modalProducts = [];
 
+// The navigation badge stays empty when the cart has no items.
+$cartCount = array_sum($_SESSION['cart'] ?? []);
+
+// Build a site-relative endpoint so AJAX still works from a subdirectory install.
+$basePath = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'])), '/');
+$cartEndpoint = ($basePath === '' ? '' : $basePath) . '/add_to_cart.php';
+
 foreach ($products as $product) {
     $images = [];
 
@@ -95,6 +105,8 @@ foreach ($products as $product) {
     }
 
     $modalProducts[$product['slug']] = [
+        'id' => (int) $product['id'],
+        'slug' => $product['slug'],
         'title' => $product['name'],
         'price' => productPrice($product['price']),
         'image' => $product['main_image'],
@@ -155,7 +167,7 @@ foreach ($products as $product) {
             <a href="#cart" title="Shopping Cart">
                 <img src="assets/images/shoppingcard_icon.png" alt="Cart">
                 <!-- The cart counter is placed over the icon using absolute positioning in CSS. -->
-                <span class="cart-badge">69</span>
+                <span class="cart-badge" aria-live="polite"><?= $cartCount > 0 ? (int) $cartCount : ''; ?></span>
             </a>
             <a href="#search" title="Search">
                 <img src="assets/images/search_icon.png" alt="Search">
@@ -329,9 +341,11 @@ foreach ($products as $product) {
         </section>
     </div>
 
+    <!-- Product and cart data are exposed before the modal controller initializes. -->
     <script>
+        window.fixerupperCartEndpoint = "<?= e($cartEndpoint); ?>";
         window.fixerupperProducts = <?= json_encode($modalProducts, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
     </script>
-    <script src="assets/js/product-modal.js"></script>
+    <script src="assets/js/product-modal.js?v=<?= filemtime(__DIR__ . '/assets/js/product-modal.js'); ?>"></script>
 </body>
 </html>
