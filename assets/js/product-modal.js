@@ -20,7 +20,7 @@
      * product object here and then fills the modal with its title, price, image
      * and details.
      */
-    const products = {
+    const products = window.fixerupperProducts || {
         "product-1": {
             title: "Ultra Threadripper Pro Gaming PC",
             price: "&pound; 3100",
@@ -275,35 +275,45 @@
     /*
      * Builds the slide list for the image area.
      *
-     * The first slide shows the real product image. The remaining blank slides
-     * preserve the current carousel and dot structure. They can later be replaced
-     * with real gallery images without rewriting the modal logic.
+     * Real product images come from the database when available. Blank slides
+     * preserve the current carousel and dot structure until more gallery images
+     * are added for each product.
      */
     function getSlides(product) {
-        return [
-            { type: "image", src: product.image, alt: product.title },
-            { type: "blank" },
-            { type: "blank" },
-            { type: "blank" },
-            { type: "blank" },
-            { type: "blank" },
-            { type: "blank" },
-            { type: "blank" }
-        ];
+        const slides = Array.isArray(product.images) && product.images.length
+            ? product.images.map((image) => ({
+                type: "image",
+                src: image.src,
+                alt: image.alt || product.title
+            }))
+            : [{ type: "image", src: product.image, alt: product.title }];
+
+        while (slides.length < 8) {
+            slides.push({ type: "blank" });
+        }
+
+        return slides.slice(0, 8);
     }
 
     /*
      * Renders the details text for the selected product.
      *
-     * Product data is local and controlled by the project, so innerHTML is used
-     * here to create the repeated <p><strong>Label:</strong> Value</p> structure.
-     * After rendering, the text panel is reset to the top so each new product
-     * opens from the beginning.
+     * The details can now come from the database, so each text node is created
+     * directly instead of building HTML strings.
      */
     function renderDetails(product) {
-        modalText.innerHTML = product.details
-            .map(([label, value]) => `<p><strong>${label}:</strong> ${value}</p>`)
-            .join("");
+        modalText.textContent = "";
+
+        product.details.forEach(([label, value]) => {
+            const detail = document.createElement("p");
+            const detailLabel = document.createElement("strong");
+
+            detailLabel.textContent = `${label}:`;
+            detail.appendChild(detailLabel);
+            detail.append(` ${value}`);
+            modalText.appendChild(detail);
+        });
+
         modalText.scrollTop = 0;
     }
 

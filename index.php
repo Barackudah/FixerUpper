@@ -1,4 +1,109 @@
-﻿<!DOCTYPE html>
+<?php
+require_once __DIR__ . '/config.php';
+
+function e($value)
+{
+    return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
+}
+
+function productPrice($price)
+{
+    return '&pound; ' . number_format((float) $price, 0, '.', '');
+}
+
+function productDividerClasses($position)
+{
+    $classes = ['products-dots', 'products-dots--inline'];
+
+    if ($position % 3 === 0) {
+        $classes[] = 'products-dots--desktop-row';
+    }
+
+    $classes[] = $position % 2 === 0 ? 'products-dots--compact-row' : 'products-dots--single-column';
+
+    return implode(' ', $classes);
+}
+
+$productsById = [];
+$productResult = $conn->query(
+    'SELECT id, slug, name, short_description, price, main_image
+     FROM products
+     WHERE is_active = 1
+     ORDER BY id'
+);
+
+while ($product = $productResult->fetch_assoc()) {
+    $product['specs'] = [];
+    $product['images'] = [];
+    $productsById[(int) $product['id']] = $product;
+}
+
+$productIds = array_keys($productsById);
+
+if ($productIds) {
+    $idList = implode(',', $productIds);
+
+    $imageResult = $conn->query(
+        "SELECT product_id, image_path, alt_text
+         FROM product_images
+         WHERE product_id IN ($idList)
+         ORDER BY product_id, sort_order, id"
+    );
+
+    while ($image = $imageResult->fetch_assoc()) {
+        $productId = (int) $image['product_id'];
+        $productsById[$productId]['images'][] = $image;
+    }
+
+    $specResult = $conn->query(
+        "SELECT product_id, label, value
+         FROM product_specs
+         WHERE product_id IN ($idList)
+         ORDER BY product_id, sort_order, id"
+    );
+
+    while ($spec = $specResult->fetch_assoc()) {
+        $productId = (int) $spec['product_id'];
+        $productsById[$productId]['specs'][] = $spec;
+    }
+}
+
+$products = array_values($productsById);
+$modalProducts = [];
+
+foreach ($products as $product) {
+    $images = [];
+
+    foreach ($product['images'] as $image) {
+        $images[] = [
+            'src' => $image['image_path'],
+            'alt' => $image['alt_text'],
+        ];
+    }
+
+    if (!$images) {
+        $images[] = [
+            'src' => $product['main_image'],
+            'alt' => $product['name'],
+        ];
+    }
+
+    $details = [];
+
+    foreach ($product['specs'] as $spec) {
+        $details[] = [$spec['label'], $spec['value']];
+    }
+
+    $modalProducts[$product['slug']] = [
+        'title' => $product['name'],
+        'price' => productPrice($product['price']),
+        'image' => $product['main_image'],
+        'images' => $images,
+        'details' => $details,
+    ];
+}
+?>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <!--
@@ -73,103 +178,23 @@
                 Each product card follows the same template:
                 image, title, short description, price and a link to more details.
             -->
-            <article class="product-card">
-                <div class="product-media">
-                    <img src="assets/images/pc_1.png" alt="Ultra Threadripper Pro Gaming PC">
-                </div>
-                <h2 class="product-title">Ultra Threadripper Pro Gaming PC</h2>
-                <p class="product-description">
-                    Windows 11 Pro Workstations (64-bit Edition) AMD Ryzen&trade; Threadripper&trade; PRO 9985WX NVIDIA&reg; RTX&trade; PRO 5000 Blackwell 48GB 128GB DDR5 ...
-                </p>
-                <div class="product-footer">
-                    <span class="product-price">&pound; 3100</span>
-                    <a class="product-more-info" href="#product-1" data-product-id="product-1">More Info</a>
-                </div>
-            </article>
+            <?php foreach ($products as $index => $product): ?>
+                <article class="product-card">
+                    <div class="product-media">
+                        <img src="<?= e($product['main_image']); ?>" alt="<?= e($product['name']); ?>" onerror="this.onerror=null; this.src='assets/images/pc_1.png';">
+                    </div>
+                    <h2 class="product-title"><?= e($product['name']); ?></h2>
+                    <p class="product-description">
+                        <?= e($product['short_description']); ?>
+                    </p>
+                    <div class="product-footer">
+                        <span class="product-price"><?= productPrice($product['price']); ?></span>
+                        <a class="product-more-info" href="#<?= e($product['slug']); ?>" data-product-id="<?= e($product['slug']); ?>">More Info</a>
+                    </div>
+                </article>
 
-            <div class="products-dots products-dots--inline products-dots--single-column" aria-hidden="true"></div>
-
-            <article class="product-card">
-                <div class="product-media">
-                    <!-- onerror loads a fallback image if the specific product image cannot be found. -->
-                    <img src="assets/images/pc_2.png" alt="Intel Ultra 9 Z890 PC Builder" onerror="this.onerror=null; this.src='assets/images/pc_1.png';">
-                </div>
-                <h2 class="product-title">Intel Ultra 9 Z890 PC Builder</h2>
-                <p class="product-description">
-                    Intel&reg; Core&trade; Ultra 9 285K: 24 Cores [8P Up to 5.70GHz / 16E Up to 4.60GHz], 125W TDP, 40MB Cache, Intel Graphics No Overclocking...
-                </p>
-                <div class="product-footer">
-                    <span class="product-price">&pound; 1900</span>
-                    <a class="product-more-info" href="#product-2" data-product-id="product-2">More Info</a>
-                </div>
-            </article>
-
-            <div class="products-dots products-dots--inline products-dots--compact-row" aria-hidden="true"></div>
-
-            <article class="product-card">
-                <div class="product-media">
-                    <!-- The same fallback keeps the card from appearing visually empty. -->
-                    <img src="assets/images/pc_3.png" alt="AMD 7000-Series Ryzen 9 Custom" onerror="this.onerror=null; this.src='assets/images/pc_1.png';">
-                </div>
-                <h2 class="product-title">AMD 7000-Series Ryzen 9 Custom</h2>
-                <p class="product-description">
-                    AMD Ryzen&trade; 9 7900X: 12 Cores, 170W TDP, 4.70GHz, 5.60GHz Turbo, 64MB L3 Cache, Pro OC Compatible, Radeon Graphics...
-                </p>
-                <div class="product-footer">
-                    <span class="product-price">&pound; 2100</span>
-                    <a class="product-more-info" href="#product-3" data-product-id="product-3">More Info</a>
-                </div>
-            </article>
-
-            <div class="products-dots products-dots--inline products-dots--desktop-row products-dots--single-column" aria-hidden="true"></div>
-
-            <article class="product-card">
-                <div class="product-media">
-                    <img src="assets/images/pc_4.png" alt="Ryzen 7 RTX Gaming PC">
-                </div>
-                <h2 class="product-title">Ryzen 7 RTX Gaming PC</h2>
-                <p class="product-description">
-                    AMD Ryzen&trade; 7 7800X3D: 8 Cores, NVIDIA&reg; GeForce RTX&trade; 4070 SUPER, 32GB DDR5, 2TB NVMe SSD, Wi-Fi Ready...
-                </p>
-                <div class="product-footer">
-                    <span class="product-price">&pound; 1600</span>
-                    <a class="product-more-info" href="#product-4" data-product-id="product-4">More Info</a>
-                </div>
-            </article>
-
-            <div class="products-dots products-dots--inline products-dots--compact-row" aria-hidden="true"></div>
-
-            <article class="product-card">
-                <div class="product-media">
-                    <img src="assets/images/pc_5.png" alt="Intel Core i7 Gaming PC">
-                </div>
-                <h2 class="product-title">Intel Core i7 Gaming PC</h2>
-                <p class="product-description">
-                    Intel&reg; Core&trade; i7: 20 Cores, NVIDIA&reg; GeForce RTX&trade; 4070 Ti SUPER, 32GB DDR5, 2TB NVMe SSD, RGB Cooling...
-                </p>
-                <div class="product-footer">
-                    <span class="product-price">&pound; 1750</span>
-                    <a class="product-more-info" href="#product-5" data-product-id="product-5">More Info</a>
-                </div>
-            </article>
-
-            <div class="products-dots products-dots--inline products-dots--single-column" aria-hidden="true"></div>
-
-            <article class="product-card">
-                <div class="product-media">
-                    <img src="assets/images/pc_6.png" alt="Ryzen 9 Workstation PC">
-                </div>
-                <h2 class="product-title">Ryzen 9 Workstation PC</h2>
-                <p class="product-description">
-                    AMD Ryzen&trade; 9 9950X: 16 Cores, NVIDIA&reg; GeForce RTX&trade; 4080 SUPER, 64GB DDR5, 4TB NVMe SSD, Liquid Cooling...
-                </p>
-                <div class="product-footer">
-                    <span class="product-price">&pound; 2400</span>
-                    <a class="product-more-info" href="#product-6" data-product-id="product-6">More Info</a>
-                </div>
-            </article>
-
-            <div class="products-dots products-dots--inline products-dots--desktop-row products-dots--compact-row" aria-hidden="true"></div>
+                <div class="<?= e(productDividerClasses($index + 1)); ?>" aria-hidden="true"></div>
+            <?php endforeach; ?>
         </section>
 
         <!--
@@ -304,6 +329,9 @@
         </section>
     </div>
 
+    <script>
+        window.fixerupperProducts = <?= json_encode($modalProducts, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
+    </script>
     <script src="assets/js/product-modal.js"></script>
 </body>
 </html>
