@@ -1,6 +1,6 @@
 <?php
 // The cart is stored in the visitor's PHP session until checkout is implemented.
-session_start();
+require_once __DIR__ . '/session.php';
 
 require_once __DIR__ . '/config.php';
 
@@ -9,7 +9,15 @@ header('Content-Type: application/json; charset=utf-8');
 // Keep JSON responses consistent after validation errors and successful adds.
 function cartCount()
 {
-    return array_sum($_SESSION['cart'] ?? []);
+    $count = 0;
+
+    foreach ($_SESSION['cart'] ?? [] as $quantity) {
+        if ((int) $quantity > 0) {
+            $count++;
+        }
+    }
+
+    return $count;
 }
 
 // This endpoint only changes cart state through AJAX POST requests.
@@ -60,9 +68,22 @@ if (!isset($_SESSION['cart'])) {
 
 // Store cart quantities by real product id so checkout can join to products directly.
 $cartProductId = (int) $product['id'];
-$_SESSION['cart'][$cartProductId] = ($_SESSION['cart'][$cartProductId] ?? 0) + $quantity;
+
+if (isset($_SESSION['cart'][$cartProductId]) && (int) $_SESSION['cart'][$cartProductId] > 0) {
+    http_response_code(409);
+    echo json_encode([
+        'success' => false,
+        'duplicate' => true,
+        'message' => 'This product is already in the cart.',
+        'cart_count' => cartCount(),
+    ]);
+    exit;
+}
+
+$_SESSION['cart'][$cartProductId] = $quantity;
 
 echo json_encode([
     'success' => true,
+    'message' => 'Added to cart.',
     'cart_count' => cartCount(),
 ]);

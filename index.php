@@ -1,6 +1,6 @@
 <?php
 // Start the session before rendering so the cart badge can reflect the current cart.
-session_start();
+require_once __DIR__ . '/session.php';
 
 require_once __DIR__ . '/config.php';
 
@@ -12,6 +12,19 @@ function e($value)
 function productPrice($price)
 {
     return '&pound; ' . number_format((float) $price, 0, '.', '');
+}
+
+function cartBadgeCount($cart)
+{
+    $count = 0;
+
+    foreach ($cart as $quantity) {
+        if ((int) $quantity > 0) {
+            $count++;
+        }
+    }
+
+    return $count;
 }
 
 function productDividerClasses($position)
@@ -74,8 +87,8 @@ if ($productIds) {
 $products = array_values($productsById);
 $modalProducts = [];
 
-// The navigation badge stays empty when the cart has no items.
-$cartCount = array_sum($_SESSION['cart'] ?? []);
+// The navigation badge shows unique products and stays empty when the cart has no items.
+$cartCount = cartBadgeCount($_SESSION['cart'] ?? []);
 
 // Build a site-relative endpoint so AJAX still works from a subdirectory install.
 $basePath = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'])), '/');
@@ -129,7 +142,7 @@ foreach ($products as $product) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FIXERUPPER</title>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500&family=Teko:wght@600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="assets/css/style.css?v=<?= filemtime(__DIR__ . '/assets/css/style.css'); ?>">
 </head>
 <body>
     <!--
@@ -164,7 +177,7 @@ foreach ($products as $product) {
             <a href="#logout" title="Logout">
                 <img src="assets/images/logout_icon.png" alt="Logout">
             </a>
-            <a href="#cart" title="Shopping Cart">
+            <a href="cart.php" title="Shopping Cart">
                 <img src="assets/images/shoppingcard_icon.png" alt="Cart">
                 <!-- The cart counter is placed over the icon using absolute positioning in CSS. -->
                 <span class="cart-badge" aria-live="polite"><?= $cartCount > 0 ? (int) $cartCount : ''; ?></span>
@@ -337,6 +350,7 @@ foreach ($products as $product) {
                     <span id="modal-product-price" class="product-modal__price"></span>
                     <button class="product-modal__cart" type="button">Add to Cart</button>
                 </div>
+                <span id="modal-cart-message" class="product-modal__message" role="status" aria-live="polite"></span>
             </div>
         </section>
     </div>

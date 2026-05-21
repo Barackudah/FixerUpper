@@ -131,6 +131,7 @@
     const modalScrollbar = modal.querySelector(".product-modal__scrollbar");
     const modalScrollbarThumb = modal.querySelector(".product-modal__scrollbar-thumb");
     const cartButton = modal.querySelector(".product-modal__cart");
+    const cartMessage = document.getElementById("modal-cart-message");
     const cartBadge = document.querySelector(".cart-badge");
     const moreInfoLinks = document.querySelectorAll(".product-more-info[data-product-id]");
 
@@ -153,6 +154,7 @@
     let dragStartScrollTop = 0;
     let lockedScrollY = 0;
     let lastTouchY = 0;
+    let cartMessageTimer = 0;
 
     /*
      * Checks whether an element can still scroll in the requested direction.
@@ -374,6 +376,27 @@
     }
 
     /*
+     * Shows the add-to-cart result without changing the modal layout. Duplicate
+     * products use the same live region so screen-reader users hear the message.
+     */
+    function showCartMessage(message, tone) {
+        if (!cartMessage) {
+            return;
+        }
+
+        window.clearTimeout(cartMessageTimer);
+        cartMessage.textContent = message || "";
+        cartMessage.dataset.tone = tone || "";
+
+        if (message) {
+            cartMessageTimer = window.setTimeout(() => {
+                cartMessage.textContent = "";
+                cartMessage.dataset.tone = "";
+            }, 3600);
+        }
+    }
+
+    /*
      * Creates the dot buttons for the carousel. Each button closes over its own
      * index, so a click can call setSlide(index) directly.
      */
@@ -441,6 +464,7 @@
         activeProductId = product.id || productId;
         activeSlide = 0;
         lastFocusedElement = document.activeElement;
+        showCartMessage("", "");
 
         if (cartButton) {
             cartButton.dataset.productId = activeProductId;
@@ -474,6 +498,7 @@
         modalCopy.classList.remove("has-scroll");
         activeProduct = null;
         activeProductId = null;
+        showCartMessage("", "");
 
         if (cartButton) {
             delete cartButton.dataset.productId;
@@ -512,13 +537,21 @@
 
             const result = await response.json();
 
+            if (result.duplicate) {
+                updateCartBadge(result.cart_count);
+                showCartMessage(result.message || "This product is already in the cart.", "warning");
+                return;
+            }
+
             if (!response.ok || !result.success) {
                 throw new Error(result.message || "Unable to add product to cart.");
             }
 
             updateCartBadge(result.cart_count);
+            showCartMessage(result.message || "Added to cart.", "success");
         } catch (error) {
             console.error(error);
+            showCartMessage("Unable to add product to cart.", "error");
         } finally {
             cartButton.disabled = false;
         }
