@@ -182,11 +182,6 @@ nav::after {
     opacity: 0.8;
 }
 
-/* Cart page removes the normal navigation underline because the cart table has its own header divider. */
-.cart-body nav::after {
-    content: none;
-}
-
 /* The green cart counter is placed over the icon with absolute positioning. */
 .cart-badge {
     position: absolute;
@@ -644,9 +639,12 @@ nav::after {
     padding-top: 0;
 }
 
-/* Move the shared container gradient down slightly so it starts behind the cart table. */
-.cart-container::before {
-    top: 24px;
+.cart-body--filled nav::after {
+    content: none;
+}
+
+.cart-body--filled .cart-container::before {
+    content: none;
 }
 
 /* The cart content is placed above the container background gradient. */
@@ -657,14 +655,25 @@ nav::after {
     padding: 0;
 }
 
-/* The standalone advertising divider is hidden on cart because row dividers handle separation. */
+/* Cart keeps the same dotted divider before advertising as the homepage. */
 .cart-ad-divider {
+    display: block;
+}
+
+.cart-body--filled .cart-ad-divider {
     display: none;
 }
 
-/* Cart advertising starts immediately after the table without the homepage overlap spacing. */
-.cart-container .advertising-block {
+.cart-body--filled .advertising-block {
     margin-top: 0;
+}
+
+.cart-body--filled .cart-row {
+    background: linear-gradient(
+        180deg,
+        #2e2e2e 0%,
+        #333333 100%
+    );
 }
 
 /*
@@ -1053,11 +1062,29 @@ nav::after {
 .cart-quantity-value {
     position: relative;
     z-index: 1;
+    display: block;
+    width: 100%;
+    min-width: 0;
+    border: 0;
+    padding: 0;
     color: #ffffff;
+    background: transparent;
+    -webkit-appearance: none;
+    appearance: none;
+    font-family: 'Montserrat', sans-serif;
     font-size: 14px;
     font-weight: 400;
     line-height: 1;
     text-align: center;
+}
+
+.cart-quantity-value:focus {
+    outline: 0;
+}
+
+.cart-quantity-value:disabled {
+    opacity: 1;
+    -webkit-text-fill-color: #ffffff;
 }
 
 /* Desktop line total aligns to the right edge of the final grid column. */
@@ -1387,27 +1414,81 @@ nav::after {
 }
 
 .product-modal__message {
-    display: block;
-    grid-column: 1;
-    min-height: 18px;
-    margin: 8px 18px 0;
+    position: relative;
+    display: inline-flex;
+    grid-column: 1 / -1;
+    align-items: center;
+    justify-content: center;
+    justify-self: center;
+    min-height: 28px;
+    margin: 8px auto 0;
+    padding: 4px 18px;
     color: #a8a8a8;
-    font-size: 9pt;
-    font-weight: 400;
+    font-size: 10pt;
+    font-weight: 500;
     line-height: 1.2;
-    text-align: right;
+    text-align: center;
+    text-shadow: 0 1px 0 rgba(0, 0, 0, 0.7);
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+    transition: color 0.2s ease;
+    pointer-events: none;
+}
+
+.product-modal__message.is-visible {
+    animation: productModalMessageIn 0.58s cubic-bezier(0.2, 0.88, 0.32, 1.18) both;
+}
+
+.product-modal__message.is-visible.is-hiding {
+    animation: productModalMessageOut 0.36s ease both;
 }
 
 .product-modal__message[data-tone="success"] {
-    color: #7eff00;
+    color: #95ff38;
 }
 
 .product-modal__message[data-tone="warning"] {
-    color: #d6d6d6;
+    color: #f0f0f0;
 }
 
 .product-modal__message[data-tone="error"] {
     color: #ff8d8d;
+}
+
+@keyframes productModalMessageIn {
+    0% {
+        opacity: 0;
+        transform: translateY(10px) scale(0.96);
+    }
+
+    58% {
+        opacity: 1;
+        transform: translateY(-1px) scale(1.015);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes productModalMessageOut {
+    0% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+
+    100% {
+        opacity: 0;
+        transform: translateY(-6px) scale(0.98);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .product-modal__message.is-visible,
+    .product-modal__message.is-visible.is-hiding {
+        animation-duration: 0.01ms;
+    }
 }
 
 /* Shared metallic text treatment for modal price and cart action. */
@@ -1638,6 +1719,12 @@ nav::after {
     .advertising-block {
         margin-top: 0;
     }
+
+    /* Cart uses a standalone divider, so it needs the same final-row rhythm as the product grid. */
+    .cart-ad-divider {
+        margin-top: var(--card-gap);
+        margin-bottom: 0;
+    }
 }
 
 /*
@@ -1812,6 +1899,10 @@ nav::after {
         padding-top: 28px;
     }
 
+    .cart-body--filled .cart-container {
+        padding-top: 0;
+    }
+
     /* The top background gradient is shorter because the single-column card stack begins higher. */
     .container::before {
         height: 240px;
@@ -1831,6 +1922,11 @@ nav::after {
     .products-dots {
         margin-top: var(--card-gap);
         margin-bottom: var(--card-gap);
+    }
+
+    /* Keep the cart advertising divider tight to the logo strip at zoomed/narrow widths. */
+    .cart-ad-divider {
+        margin-bottom: 0;
     }
 
     /* Single-column dividers appear between every product card group on phones. */

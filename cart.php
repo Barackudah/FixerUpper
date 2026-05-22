@@ -78,7 +78,7 @@ $updateCartEndpoint = ($basePath === '' ? '' : $basePath) . '/update_cart.php';
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500&family=Teko:wght@600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/style.css?v=<?= filemtime(__DIR__ . '/assets/css/style.css'); ?>">
 </head>
-<body class="cart-body">
+<body class="cart-body<?= $cartItems ? ' cart-body--filled' : ' cart-body--empty'; ?>">
     <!--
         Cart navigation mirrors the homepage header, but marks the cart link as current
         and shows the live cart badge from the server-rendered cart count.
@@ -159,7 +159,7 @@ $updateCartEndpoint = ($basePath === '' ? '' : $basePath) . '/update_cart.php';
                                 <!-- The visible capsule is hidden when the visitor reaches the remove prompt. -->
                                 <div class="cart-quantity-control" aria-label="Quantity">
                                     <button class="cart-quantity-button" type="button" data-cart-step="-1" aria-label="Decrease quantity">&minus;</button>
-                                    <span class="cart-quantity-value" data-cart-quantity><?= $quantity; ?></span>
+                                    <input class="cart-quantity-value" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="2" autocomplete="off" value="<?= $quantity; ?>" data-cart-quantity aria-label="Quantity">
                                     <button class="cart-quantity-button" type="button" data-cart-step="1" aria-label="Increase quantity">+</button>
                                 </div>
                                 <!-- Confirmation prevents accidental deletion when quantity is reduced to zero. -->

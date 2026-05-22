@@ -155,6 +155,8 @@
     let lockedScrollY = 0;
     let lastTouchY = 0;
     let cartMessageTimer = 0;
+    let cartMessageHideTimer = 0;
+    let cartMessageAnimationFrame = 0;
 
     /*
      * Checks whether an element can still scroll in the requested direction.
@@ -385,13 +387,25 @@
         }
 
         window.clearTimeout(cartMessageTimer);
+        window.clearTimeout(cartMessageHideTimer);
+        window.cancelAnimationFrame(cartMessageAnimationFrame);
         cartMessage.textContent = message || "";
         cartMessage.dataset.tone = tone || "";
+        cartMessage.classList.remove("is-visible", "is-hiding");
 
         if (message) {
+            cartMessageAnimationFrame = window.requestAnimationFrame(() => {
+                cartMessage.classList.add("is-visible");
+            });
+
+            cartMessageHideTimer = window.setTimeout(() => {
+                cartMessage.classList.add("is-hiding");
+            }, 3000);
+
             cartMessageTimer = window.setTimeout(() => {
                 cartMessage.textContent = "";
                 cartMessage.dataset.tone = "";
+                cartMessage.classList.remove("is-visible", "is-hiding");
             }, 3600);
         }
     }
