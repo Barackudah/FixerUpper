@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>FIXERUPPER Project Documentation</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 13mm;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        :root {
+            --page-bg: #333333;
+            --panel: #2e2e2e;
+            --text: #ededed;
+            --muted: #b9b9b9;
+            --line-dark: #1f1f1f;
+            --line-light: #484848;
+            --dot: #626262;
+        }
+
+        body {
+            margin: 0;
+            color: var(--text);
+            background: var(--page-bg);
+            font-family: 'Montserrat', Arial, Helvetica, sans-serif;
+            font-size: 9.6pt;
+            line-height: 1.42;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        .page {
+            max-width: 980px;
+            margin: 0 auto;
+            padding: 18px 18px 26px;
+        }
+
+        .doc-header {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 132px;
+            text-align: center;
+        }
+
+        .doc-header img {
+            width: 245px;
+            height: auto;
+            display: block;
+        }
+
+        .doc-title {
+            margin-top: 14px;
+            color: #d9d9d9;
+            font-size: 11pt;
+            font-weight: 500;
+            letter-spacing: 2.4px;
+            text-transform: uppercase;
+        }
+
+        .doc-meta {
+            margin-top: 5px;
+            color: #9e9e9e;
+            font-size: 8.4pt;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+        }
+
+        .stripe {
+            height: 2px;
+            margin: 14px 0 18px;
+            background: linear-gradient(180deg, var(--line-dark) 0 1px, var(--line-light) 1px 2px);
+        }
+
+        .dots {
+            height: 2px;
+            margin: 16px 0;
+            background:
+                repeating-linear-gradient(90deg, var(--dot) 0 3px, transparent 3px 7px) 0 0 / 100% 1px no-repeat,
+                repeating-linear-gradient(90deg, #242424 0 3px, transparent 3px 7px) 0 1px / 100% 1px no-repeat;
+        }
+
+        .columns {
+            column-count: 2;
+            column-gap: 24px;
+        }
+
+        .columns p,
+        .note,
+        .conclusion p {
+            margin: 0 0 9px;
+            text-align: justify;
+        }
+
+        h1,
+        h2,
+        h3 {
+            break-after: avoid;
+            margin: 0;
+            line-height: 1.16;
+        }
+
+        h2 {
+            margin: 15px 0 7px;
+            color: #ffffff;
+            font-size: 10.7pt;
+            font-weight: 600;
+            letter-spacing: 0.7px;
+            text-transform: uppercase;
+        }
+
+        h3 {
+            margin: 9px 0 5px;
+            color: #e5e5e5;
+            font-size: 9.7pt;
+            font-weight: 600;
+        }
+
+        .figure {
+            break-inside: avoid;
+            margin: 12px 0 16px;
+            padding: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            background: linear-gradient(180deg, #3b3b3b 0%, #303030 100%);
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.22);
+        }
+
+        .figure img {
+            width: 100%;
+            display: block;
+            border-radius: 5px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            background: #2b2b2b;
+        }
+
+        .figure-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            align-items: start;
+        }
+
+        .figure-row--desktop {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .caption {
+            margin-top: 6px;
+            color: var(--muted);
+            font-size: 8pt;
+            text-align: center;
+        }
+
+        .page-break {
+            break-before: page;
+        }
+
+        .schema-shot,
+        .conclusion {
+            padding: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 8px;
+            background: linear-gradient(180deg, #363636 0%, #2e2e2e 100%);
+        }
+
+        .conclusion {
+            padding: 13px 16px;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 6px 0 #262626;
+        }
+
+        .erd {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .table-box {
+            fill: #2f2f2f;
+            stroke: #7a7a7a;
+            stroke-width: 1.2;
+        }
+
+        .table-title {
+            fill: #4a4a4a;
+        }
+
+        .title-text {
+            fill: #ffffff;
+            font-size: 15px;
+            font-weight: 700;
+            letter-spacing: 0.4px;
+        }
+
+        .field-text {
+            fill: #d8d8d8;
+            font-size: 12px;
+        }
+
+        .relation {
+            stroke: #aaaaaa;
+            stroke-width: 2;
+            fill: none;
+            marker-end: url(#arrow);
+        }
+
+        .note {
+            color: var(--muted);
+            font-size: 8.5pt;
+        }
+    </style>
+</head>
+<body>
+    <main class="page">
+        <header class="doc-header">
+            <img src="../assets/images/logo.png" alt="FIXERUPPER logo">
+            <div class="doc-title">Project Documentation</div>
+            <div class="doc-meta">PHP, MySQL, responsive storefront and cart interface</div>
+        </header>
+
+        <div class="stripe"></div>
+
+        <section class="columns">
+            <h2>I. Application Overview</h2>
+            <p>The storefront is rendered by `index.php`. It loads active products from the database, attaches gallery images and specification rows, and exposes the resulting data to `product-modal.js`. Each product card contains the main image, title, summary, price, and a More Info action. The modal presents a larger image stage, navigation dots, product specifications, and an Add to Cart button. Feedback such as "Added to cart" and "This product is already in the cart" is displayed as centered animated text, avoiding layout shifts.</p>
+            <p>The cart is rendered by `cart.php` from `$_SESSION['cart']`. The cart controller supports plus/minus buttons and direct numeric input. Invalid input is sanitized, values are capped at 99, and a quantity of zero opens a confirmation state instead of deleting the row immediately. Pricing remains server-authoritative: JavaScript submits the requested quantity, while PHP reloads the product price from the database and returns the formatted line total.</p>
+        </section>
+
+        <div class="dots"></div>
+
+        <section class="columns">
+            <h2>II. Frontend and Responsive Optimization</h2>
+            <p>The CSS is centralized in `assets/css/style.css`. The site uses a shared dark background, gradient cards, metallic text, muted advertising logos, and precise divider effects. The cart has two explicit body states: `cart-body--empty` and `cart-body--filled`. Empty cart pages retain the homepage rhythm, including the top stripe and broad background gradient. Filled carts use a table-specific visual layer so the header, item rows, dotted divider, and advertising block do not create duplicated stripes or stacked gradients.</p>
+            <p>Mobile optimization is handled through breakpoints at 1020px, 760px, and 640px. Navigation stacks into centered rows, product cards collapse to a single column, and cart rows become compact two-line entries: image on the left, title and price in the middle, quantity controls on the right. Fixed track widths, stable quantity capsule dimensions, hidden overflow, and row-specific gradients keep the mobile layout readable during browser zoom and on narrow screens.</p>
+        </section>
+
+        <div class="dots"></div>
+
+        <section class="columns">
+            <h2>III. Database Design</h2>
+            <p>The database is defined in `database/fixerupper.sql` and uses InnoDB with `utf8mb4`. `products` is the central storefront table and stores the slug, display name, short description, price, main image, and active flag. `product_images` stores ordered gallery images, while `product_specs` stores modal specification rows. Both tables reference `products(id)` and use cascading deletes, so dependent content is removed when a product is removed.</p>
+            <p>The checkout-ready part of the schema contains `users`, `orders`, and `order_items`. One user may have many orders. One order may contain many order items. Each order item references both an order and a product, preserving quantity and unit price for future payment flow. Product deletion is restricted for saved order lines, protecting historical order data. Unique indexes prevent duplicate gallery positions, duplicate specification positions, and duplicate product rows inside the same order.</p>
+        </section>
+
+        <div class="dots"></div>
+
+        <section class="columns">
+            <h2>IV. Data and Seed Strategy</h2>
+            <p>The SQL seed creates six active PC products, one gallery image per product, and full modal specifications. Inserts use `ON DUPLICATE KEY UPDATE`, making the seed idempotent. This is useful for local development because the database can be re-imported without duplicating products, images, or specification rows. The current cart remains session-based, so order tables are prepared for future work but are not yet written by the UI.</p>
+        </section>
+
+        <div class="dots"></div>
+
+        <section>
+            <h2>V. Database Relationship Screenshot</h2>
+            <div class="schema-shot">
+                <svg class="erd" viewBox="0 0 920 470" role="img" aria-label="Database relationship diagram">
+                    <defs>
+                        <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+                            <path d="M0,0 L8,4 L0,8 Z" fill="#aaaaaa"></path>
+                        </marker>
+                    </defs>
+
+                    <rect class="table-box" x="20" y="35" width="210" height="132" rx="7"></rect>
+                    <rect class="table-title" x="20" y="35" width="210" height="30" rx="7"></rect>
+                    <text class="title-text" x="36" y="56">products</text>
+                    <text class="field-text" x="36" y="86">PK id</text>
+                    <text class="field-text" x="36" y="106">slug, name, price</text>
+                    <text class="field-text" x="36" y="126">main_image</text>
+                    <text class="field-text" x="36" y="146">is_active</text>
+
+                    <rect class="table-box" x="355" y="20" width="220" height="118" rx="7"></rect>
+                    <rect class="table-title" x="355" y="20" width="220" height="30" rx="7"></rect>
+                    <text class="title-text" x="371" y="41">product_images</text>
+                    <text class="field-text" x="371" y="71">PK id</text>
+                    <text class="field-text" x="371" y="91">FK product_id</text>
+                    <text class="field-text" x="371" y="111">image_path, sort_order</text>
+
+                    <rect class="table-box" x="355" y="170" width="220" height="118" rx="7"></rect>
+                    <rect class="table-title" x="355" y="170" width="220" height="30" rx="7"></rect>
+                    <text class="title-text" x="371" y="191">product_specs</text>
+                    <text class="field-text" x="371" y="221">PK id</text>
+                    <text class="field-text" x="371" y="241">FK product_id</text>
+                    <text class="field-text" x="371" y="261">label, value, sort_order</text>
+
+                    <rect class="table-box" x="20" y="292" width="210" height="118" rx="7"></rect>
+                    <rect class="table-title" x="20" y="292" width="210" height="30" rx="7"></rect>
+                    <text class="title-text" x="36" y="313">users</text>
+                    <text class="field-text" x="36" y="343">PK id</text>
+                    <text class="field-text" x="36" y="363">username, email</text>
+                    <text class="field-text" x="36" y="383">password_hash</text>
+
+                    <rect class="table-box" x="355" y="322" width="220" height="118" rx="7"></rect>
+                    <rect class="table-title" x="355" y="322" width="220" height="30" rx="7"></rect>
+                    <text class="title-text" x="371" y="343">orders</text>
+                    <text class="field-text" x="371" y="373">PK id</text>
+                    <text class="field-text" x="371" y="393">FK user_id</text>
+                    <text class="field-text" x="371" y="413">status, total_amount</text>
+
+                    <rect class="table-box" x="690" y="255" width="210" height="132" rx="7"></rect>
+                    <rect class="table-title" x="690" y="255" width="210" height="30" rx="7"></rect>
+                    <text class="title-text" x="706" y="276">order_items</text>
+                    <text class="field-text" x="706" y="306">PK id</text>
+                    <text class="field-text" x="706" y="326">FK order_id</text>
+                    <text class="field-text" x="706" y="346">FK product_id</text>
+                    <text class="field-text" x="706" y="366">quantity, unit_price</text>
+
+                    <path class="relation" d="M230 88 C285 88, 300 79, 355 79"></path>
+                    <path class="relation" d="M230 130 C285 130, 300 229, 355 229"></path>
+                    <path class="relation" d="M230 351 C285 351, 300 381, 355 381"></path>
+                    <path class="relation" d="M575 381 C620 381, 645 321, 690 321"></path>
+                    <path class="relation" d="M230 152 C445 152, 510 345, 690 345"></path>
+                </svg>
+                <div class="caption">Figure 1. Database relationship diagram showing primary entities and foreign-key paths.</div>
+            </div>
+        </section>
+
+        <div class="dots"></div>
+
+        <section class="page-break">
+            <h2>VI. Desktop Interface Screenshots</h2>
+            <div class="figure">
+                <img src="../assets/images/homepage-screenshot.png" alt="Desktop homepage screenshot">
+                <div class="caption">Figure 2. Desktop storefront with product cards and the advertising strip.</div>
+            </div>
+            <div class="figure-row figure-row--desktop">
+                <div class="figure">
+                    <img src="../assets/images/more-info-screenshot.png" alt="Desktop product modal screenshot">
+                    <div class="caption">Figure 3. Desktop More Info modal with gallery and specification panel.</div>
+                </div>
+                <div class="figure">
+                    <img src="../assets/images/shopping-cart-screenshot.png" alt="Desktop cart screenshot">
+                    <div class="caption">Figure 4. Desktop shopping cart with line total and quantity controls.</div>
+                </div>
+            </div>
+        </section>
+
+        <div class="dots"></div>
+
+        <section class="page-break">
+            <h2>VII. Mobile Interface Screenshots</h2>
+            <p class="note">The mobile captures demonstrate the optimized single-column storefront, stacked modal presentation, and compact cart row. The layout keeps stable control sizes and uses row-scoped backgrounds to avoid duplicated gradients or stripes.</p>
+            <div class="figure-row">
+                <div class="figure">
+                    <img src="screenshots/mobile-homepage.png" alt="Mobile homepage screenshot">
+                    <div class="caption">Figure 5. Mobile storefront card stack.</div>
+                </div>
+                <div class="figure">
+                    <img src="screenshots/mobile-modal.png" alt="Mobile modal screenshot">
+                    <div class="caption">Figure 6. Mobile product details modal.</div>
+                </div>
+                <div class="figure">
+                    <img src="screenshots/mobile-cart.png" alt="Mobile cart screenshot">
+                    <div class="caption">Figure 7. Mobile cart with compact quantity controls.</div>
+                </div>
+            </div>
+        </section>
+
+        <div class="dots"></div>
+
+        <section class="conclusion">
+            <h2>VIII. Conclusion</h2>
+            <p>FIXERUPPER now provides a coherent storefront and cart workflow across desktop and mobile breakpoints. The project keeps the implementation intentionally direct: PHP renders the main pages, MySQL stores product data and future checkout structures, JavaScript handles interactive cart and modal behavior, and CSS defines the visual system. The database is ready for a later checkout phase, while the current interface already supports product browsing, modal inspection, duplicate-cart feedback, direct quantity editing, removal confirmation, and responsive presentation without duplicate gradients or stripe artifacts.</p>
+        </section>
+
+        <div class="dots"></div>
+    </main>
+</body>
+</html>
