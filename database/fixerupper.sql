@@ -1,9 +1,12 @@
+-- Create the local project database when it does not exist yet.
 CREATE DATABASE IF NOT EXISTS fixerupper
     CHARACTER SET utf8mb4
     COLLATE utf8mb4_unicode_ci;
 
+-- All following tables and seed data are written into the FixerUpper database.
 USE fixerupper;
 
+-- Users table is prepared for future login/checkout functionality.
 CREATE TABLE IF NOT EXISTS users (
     id INT UNSIGNED NOT NULL AUTO_INCREMENT,
     username VARCHAR(50) NOT NULL,
@@ -16,6 +19,7 @@ CREATE TABLE IF NOT EXISTS users (
     UNIQUE KEY uq_users_email (email)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Products are the main storefront items shown on index.php and cart.php.
 CREATE TABLE IF NOT EXISTS products (
     id INT UNSIGNED NOT NULL AUTO_INCREMENT,
     slug VARCHAR(50) NOT NULL,
@@ -31,6 +35,7 @@ CREATE TABLE IF NOT EXISTS products (
     KEY idx_products_active (is_active)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Product images support modal galleries and keep image ordering outside the PHP code.
 CREATE TABLE IF NOT EXISTS product_images (
     id INT UNSIGNED NOT NULL AUTO_INCREMENT,
     product_id INT UNSIGNED NOT NULL,
@@ -47,6 +52,7 @@ CREATE TABLE IF NOT EXISTS product_images (
         ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Product specifications are rendered as labelled details inside the More Info modal.
 CREATE TABLE IF NOT EXISTS product_specs (
     id INT UNSIGNED NOT NULL AUTO_INCREMENT,
     product_id INT UNSIGNED NOT NULL,
@@ -63,6 +69,7 @@ CREATE TABLE IF NOT EXISTS product_specs (
         ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Orders are not wired to checkout yet, but the structure is ready for future payment flow.
 CREATE TABLE IF NOT EXISTS orders (
     id INT UNSIGNED NOT NULL AUTO_INCREMENT,
     user_id INT UNSIGNED NOT NULL,
@@ -79,6 +86,7 @@ CREATE TABLE IF NOT EXISTS orders (
         ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Order items preserve the product, quantity and unit price for each checkout line.
 CREATE TABLE IF NOT EXISTS order_items (
     id INT UNSIGNED NOT NULL AUTO_INCREMENT,
     order_id INT UNSIGNED NOT NULL,
@@ -100,6 +108,7 @@ CREATE TABLE IF NOT EXISTS order_items (
         ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Seed the six active storefront products used by the current design and screenshots.
 INSERT INTO products (slug, name, short_description, price, main_image, is_active) VALUES
     ('product-1', 'Ultra Threadripper Pro Gaming PC', 'Windows 11 Pro Workstations (64-bit Edition) AMD Ryzen Threadripper PRO 9985WX NVIDIA RTX PRO 5000 Blackwell 48GB 128GB DDR5 ...', 3100.00, 'assets/images/pc_1.png', 1),
     ('product-2', 'Intel Ultra 9 Z890 PC Builder', 'Intel Core Ultra 9 285K: 24 Cores [8P Up to 5.70GHz / 16E Up to 4.60GHz], 125W TDP, 40MB Cache, Intel Graphics No Overclocking...', 1900.00, 'assets/images/pc_2.png', 1),
@@ -108,20 +117,24 @@ INSERT INTO products (slug, name, short_description, price, main_image, is_activ
     ('product-5', 'Intel Core i7 Gaming PC', 'Intel Core i7: 20 Cores, NVIDIA GeForce RTX 4070 Ti SUPER, 32GB DDR5, 2TB NVMe SSD, RGB Cooling...', 1750.00, 'assets/images/pc_5.png', 1),
     ('product-6', 'Ryzen 9 Workstation PC', 'AMD Ryzen 9 9950X: 16 Cores, NVIDIA GeForce RTX 4080 SUPER, 64GB DDR5, 4TB NVMe SSD, Liquid Cooling...', 2400.00, 'assets/images/pc_6.png', 1)
 ON DUPLICATE KEY UPDATE
+    -- Keep seed reruns idempotent by refreshing editable product fields.
     name = VALUES(name),
     short_description = VALUES(short_description),
     price = VALUES(price),
     main_image = VALUES(main_image),
     is_active = VALUES(is_active);
 
+-- Add one gallery image per product using the product's main image as the first slide.
 INSERT INTO product_images (product_id, image_path, alt_text, sort_order)
 SELECT id, main_image, name, 1
 FROM products
 WHERE slug IN ('product-1', 'product-2', 'product-3', 'product-4', 'product-5', 'product-6')
 ON DUPLICATE KEY UPDATE
+    -- Re-running the seed updates image metadata without creating duplicate gallery rows.
     image_path = VALUES(image_path),
     alt_text = VALUES(alt_text);
 
+-- Seed modal specifications for every active product.
 INSERT INTO product_specs (product_id, label, value, sort_order)
 SELECT id, 'Operating System', 'Windows 11 Pro Workstations (64-bit Edition)', 1 FROM products WHERE slug = 'product-1'
 UNION ALL SELECT id, 'Processor', 'AMD Ryzen Threadripper PRO 9985WX with workstation-class multi-core performance', 2 FROM products WHERE slug = 'product-1'
@@ -172,5 +185,6 @@ UNION ALL SELECT id, 'Storage', '4TB NVMe SSD', 5 FROM products WHERE slug = 'pr
 UNION ALL SELECT id, 'Cooling', 'Liquid cooling with a quiet performance curve', 6 FROM products WHERE slug = 'product-6'
 UNION ALL SELECT id, 'Case', 'Showcase chassis with panoramic side window', 7 FROM products WHERE slug = 'product-6'
 ON DUPLICATE KEY UPDATE
+    -- Specification rows are keyed by product and sort order, so reruns update copy in place.
     label = VALUES(label),
     value = VALUES(value);

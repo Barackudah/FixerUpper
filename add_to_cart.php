@@ -4,21 +4,10 @@ require_once __DIR__ . '/session.php';
 
 require_once __DIR__ . '/config.php';
 
+// Shared cart-count helper keeps JSON badge values consistent with the rendered pages.
+require_once __DIR__ . '/helpers.php';
+
 header('Content-Type: application/json; charset=utf-8');
-
-// Keep JSON responses consistent after validation errors and successful adds.
-function cartCount()
-{
-    $count = 0;
-
-    foreach ($_SESSION['cart'] ?? [] as $quantity) {
-        if ((int) $quantity > 0) {
-            $count++;
-        }
-    }
-
-    return $count;
-}
 
 // This endpoint only changes cart state through AJAX POST requests.
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -31,7 +20,10 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
+// Product ids arrive from the modal as either a database id or a legacy slug.
 $productId = trim($_POST['product_id'] ?? '');
+
+// The modal currently adds one item, but the endpoint accepts a quantity for future reuse.
 $quantity = (int) ($_POST['quantity'] ?? 1);
 
 // Reject empty product ids and non-positive quantities before touching the database.
@@ -52,6 +44,7 @@ $stmt->bind_param('is', $numericProductId, $productId);
 $stmt->execute();
 $product = $stmt->get_result()->fetch_assoc();
 
+// Stop early if the posted id no longer matches an active product.
 if (!$product) {
     http_response_code(404);
     echo json_encode([
@@ -62,6 +55,7 @@ if (!$product) {
     exit;
 }
 
+// The cart array is created lazily so visitors without a cart keep a smaller session.
 if (!isset($_SESSION['cart'])) {
     $_SESSION['cart'] = [];
 }
@@ -80,8 +74,10 @@ if (isset($_SESSION['cart'][$cartProductId]) && (int) $_SESSION['cart'][$cartPro
     exit;
 }
 
+// The session cart stores product ids as keys and quantities as values.
 $_SESSION['cart'][$cartProductId] = $quantity;
 
+// Return the updated unique-product count so the navigation badge can refresh instantly.
 echo json_encode([
     'success' => true,
     'message' => 'Added to cart.',

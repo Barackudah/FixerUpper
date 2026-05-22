@@ -182,6 +182,7 @@ nav::after {
     opacity: 0.8;
 }
 
+/* Cart page removes the normal navigation underline because the cart table has its own header divider. */
 .cart-body nav::after {
     content: none;
 }
@@ -200,7 +201,6 @@ nav::after {
     line-height: 1;
     min-width: 0;
     text-align: center;
-    
 }
 
 /* Main content: the central page area with products, the advertising strip and the footer. */
@@ -635,14 +635,21 @@ nav::after {
     filter: drop-shadow(0 1px 0 #171717);
 }
 
+/*
+    Shopping cart page layout.
+    The cart reuses the same dark container as the homepage, but removes the default
+    top padding so the table header tabs sit directly under the navigation area.
+*/
 .cart-container {
     padding-top: 0;
 }
 
+/* Move the shared container gradient down slightly so it starts behind the cart table. */
 .cart-container::before {
     top: 24px;
 }
 
+/* The cart content is placed above the container background gradient. */
 .cart-page {
     position: relative;
     z-index: 1;
@@ -650,14 +657,21 @@ nav::after {
     padding: 0;
 }
 
+/* The standalone advertising divider is hidden on cart because row dividers handle separation. */
 .cart-ad-divider {
     display: none;
 }
 
+/* Cart advertising starts immediately after the table without the homepage overlap spacing. */
 .cart-container .advertising-block {
     margin-top: 0;
 }
 
+/*
+    Cart table grid.
+    Custom properties define the full table geometry once, then header rows and item
+    rows reuse the same column template so labels, thumbnails, quantity and total align.
+*/
 .cart-table {
     --cart-thumb-size: 71px;
     --cart-edge-gap: clamp(18px, 2.5vw, 34px);
@@ -672,6 +686,7 @@ nav::after {
     width: 100%;
 }
 
+/* Header tabs share the cart grid and extend across the full table width. */
 .cart-header {
     position: relative;
     display: grid;
@@ -684,6 +699,7 @@ nav::after {
     padding-inline: var(--cart-edge-gap);
 }
 
+/* Thin recessed line under the header tabs, matching the navigation divider style. */
 .cart-header::before {
     content: "";
     position: absolute;
@@ -698,6 +714,7 @@ nav::after {
     );
 }
 
+/* Shared pill styling for ITEMS, QUANTITY and TOTAL PRICE labels. */
 .cart-heading {
     position: relative;
     z-index: 1;
@@ -721,21 +738,25 @@ nav::after {
     white-space: nowrap;
 }
 
+/* Desktop ITEMS label is centered over the thumbnail column. */
 .cart-heading--items {
     grid-column: 1;
     justify-self: center;
 }
 
+/* Desktop QUANTITY label is optically pulled left to match the shifted quantity capsule below. */
 .cart-heading--quantity {
     grid-column: 3;
     transform: translateX(-108px);
 }
 
+/* TOTAL PRICE label is right-aligned with the line total column. */
 .cart-heading--total {
     grid-column: 4;
     justify-self: end;
 }
 
+/* Each cart item row uses the same columns as the header for stable alignment. */
 .cart-row {
     position: relative;
     display: grid;
@@ -747,10 +768,16 @@ nav::after {
     padding: 12px var(--cart-edge-gap);
 }
 
+/* Extra top padding keeps consecutive rows from touching the dotted divider above them. */
 .cart-row + .cart-row {
     padding-top: 12px;
 }
 
+/*
+    Dotted row divider.
+    Two repeating gradients create a light dot row plus a dark shadow row, matching
+    the dotted separators on the homepage instead of drawing one solid border.
+*/
 .cart-row::after {
     content: "";
     position: absolute;
@@ -771,6 +798,7 @@ nav::after {
         ) 0 1px / 100% 1px no-repeat;
 }
 
+/* Thumbnail frame for cart product images, including the small metallic bevel effect. */
 .cart-item-media {
     position: relative;
     display: flex;
@@ -792,6 +820,7 @@ nav::after {
         0 2px 0 #242424;
 }
 
+/* Product art is contained inside the square frame without being cropped. */
 .cart-item-media img {
     display: block;
     width: auto;
@@ -800,6 +829,7 @@ nav::after {
     object-fit: contain;
 }
 
+/* Desktop title stays on one line and uses ellipsis if a product name is too long. */
 .cart-item-title {
     grid-column: 2;
     align-self: center;
@@ -813,6 +843,7 @@ nav::after {
     white-space: nowrap;
 }
 
+/* Quantity cell positions the capsule in the third grid column. */
 .cart-quantity-cell {
     display: flex;
     grid-column: 3;
@@ -824,16 +855,30 @@ nav::after {
     width: var(--cart-quantity-width);
 }
 
+/*
+    Quantity capsule frame and internal layout.
+    The border, background gradient and inset highlight recreate the beveled capsule
+    from the mockup, while the grid columns hold minus, value and plus controls.
+*/
 .cart-quantity-control {
     position: relative;
     isolation: isolate;
+    display: grid;
+    grid-template-columns: 20px minmax(22px, 1fr) 20px;
+    align-items: center;
+    width: 92px;
     height: 33px;
     border: 2px solid #626262;
     border-radius: 12px;
     background: linear-gradient(180deg, #3a3a3a 0%, #484848 100%);
     box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.18);
+    padding: 4px 5px;
 }
 
+/*
+    Inner gradient stroke for the quantity capsule.
+    The mask cuts the middle out of the pseudo-element, leaving only a 1px ring.
+*/
 .cart-quantity-control::before {
     content: "";
     position: absolute;
@@ -853,18 +898,12 @@ nav::after {
     pointer-events: none;
 }
 
-.cart-quantity-control {
-    display: grid;
-    grid-template-columns: 20px minmax(22px, 1fr) 20px;
-    align-items: center;
-    width: 92px;
-    padding: 4px 5px;
-}
-
+/* JavaScript hides the capsule while the remove confirmation is shown. */
 .cart-quantity-control[hidden] {
     display: none;
 }
 
+/* Confirmation text shown after the user decreases quantity from one to zero. */
 .cart-remove-confirmation {
     display: flex;
     flex-direction: column;
@@ -882,14 +921,17 @@ nav::after {
     white-space: nowrap;
 }
 
+/* Keep the confirmation out of layout until JavaScript switches it on. */
 .cart-remove-confirmation[hidden] {
     display: none;
 }
 
+/* First line of the remove prompt. */
 .cart-remove-label {
     display: block;
 }
 
+/* YES / NO action row inside the remove prompt. */
 .cart-remove-options {
     display: flex;
     align-items: center;
@@ -897,6 +939,7 @@ nav::after {
     gap: 6px;
 }
 
+/* Confirmation buttons inherit the prompt typography and avoid default button chrome. */
 .cart-remove-choice {
     padding: 0;
     border: 0;
@@ -919,6 +962,11 @@ nav::after {
     opacity: 0.34;
 }
 
+/*
+    Quantity plus/minus button.
+    Text is hidden with font-size: 0; the visible symbols are drawn with CSS so they
+    stay sharp at browser zoom levels and can share one color/shadow system.
+*/
 .cart-quantity-button {
     --quantity-icon-size: 11px;
     --quantity-icon-stroke: 2px;
@@ -945,6 +993,7 @@ nav::after {
     transition: color 0.18s ease, opacity 0.18s ease;
 }
 
+/* Base horizontal bar used by both the minus icon and the plus icon layers. */
 .cart-quantity-button::before,
 .cart-quantity-button::after {
     content: "";
@@ -958,17 +1007,24 @@ nav::after {
     transform: translate(-50%, -50%);
 }
 
+/* Foreground icon layer uses currentColor so hover can lighten the symbol. */
 .cart-quantity-button::before {
     --quantity-icon-color: currentColor;
     z-index: 1;
 }
 
+/* Shadow icon layer is offset downward to match the mockup depth. */
 .cart-quantity-button::after {
     --quantity-icon-color: #202020;
     top: calc(50% + var(--quantity-icon-shadow-offset));
     z-index: 0;
 }
 
+/*
+    Plus icon construction.
+    Multiple gradients draw rounded ends and a connected vertical/horizontal cross
+    as one visual symbol, avoiding overlap artifacts between separate lines.
+*/
 .cart-quantity-button[data-cart-step="1"]::before,
 .cart-quantity-button[data-cart-step="1"]::after {
     width: var(--quantity-icon-size);
@@ -993,6 +1049,7 @@ nav::after {
     opacity: 0.34;
 }
 
+/* Numeric value stays above the capsule ring and centered between both controls. */
 .cart-quantity-value {
     position: relative;
     z-index: 1;
@@ -1003,6 +1060,7 @@ nav::after {
     text-align: center;
 }
 
+/* Desktop line total aligns to the right edge of the final grid column. */
 .cart-line-total {
     grid-column: 4;
     align-self: center;
@@ -1014,10 +1072,12 @@ nav::after {
     white-space: nowrap;
 }
 
+/* Slightly fade a row while an AJAX update is in progress. */
 .cart-row.is-busy {
     opacity: 0.72;
 }
 
+/* Empty-cart state replaces the table when there are no saved cart rows. */
 .cart-empty {
     display: flex;
     align-items: center;
@@ -1496,49 +1556,64 @@ nav::after {
         width: 100%;
     }
 
+    /*
+        Tablet cart columns.
+        The total column remains visible, but the quantity column becomes wider so
+        the capsule can sit comfortably without the desktop negative offset.
+    */
     .cart-table {
         --cart-thumb-size: 79px;
         --cart-column-gap: 24px;
+        --cart-quantity-width: 116px;
         --cart-total-width: 190px;
-        --cart-grid-template: var(--cart-thumb-size) minmax(0, 1fr) var(--cart-total-width);
+        --cart-grid-template: var(--cart-thumb-size) minmax(0, 1fr) var(--cart-quantity-width) var(--cart-total-width);
     }
 
-    .cart-header {
-        display: none;
+    /* Remove the desktop optical offset because the tablet grid has balanced columns. */
+    .cart-heading--quantity {
+        transform: none;
     }
 
+    /* Let rows grow if product names wrap, while preserving a consistent minimum height. */
     .cart-row {
-        row-gap: 8px;
         height: auto;
-        min-height: 0;
+        min-height: 103px;
         padding-top: 12px;
         padding-bottom: 14px;
     }
 
+    /* Tablet product titles may wrap naturally because the row is taller. */
     .cart-item-title {
-        align-self: end;
+        align-self: center;
         font-size: 12pt;
+        white-space: normal;
     }
 
+    /* Tablet quantity capsule is centered in its own column instead of shifted left. */
     .cart-quantity-cell {
-        grid-column: 2;
-        grid-row: 2;
-        justify-self: start;
-        width: 123px;
+        grid-column: 3;
+        grid-row: 1;
+        align-self: center;
+        justify-self: center;
+        transform: none;
+        width: var(--cart-quantity-width);
     }
 
+    /* Slightly larger capsule gives touch users more comfortable controls. */
     .cart-quantity-control {
         width: 116px;
         height: 41px;
     }
 
+    /* Match the confirmation panel height to the enlarged tablet capsule. */
     .cart-remove-confirmation {
         height: 45px;
     }
 
+    /* Total remains in the fourth column on tablet and stays vertically centered. */
     .cart-line-total {
-        grid-column: 3;
-        grid-row: 2;
+        grid-column: 4;
+        grid-row: 1;
         align-self: center;
     }
 
@@ -1604,72 +1679,137 @@ nav::after {
         height: 28px;
     }
 
-    .cart-page {
-        padding: 0;
-    }
-
+    /*
+        Phone cart columns.
+        The visible layout becomes thumbnail, name/price and quantity. The total
+        heading is hidden because the price is shown under the item name.
+    */
     .cart-table {
         --cart-thumb-size: 71px;
-        --cart-column-gap: 18px;
-        --cart-grid-template: var(--cart-thumb-size) minmax(0, 1fr);
+        --cart-column-gap: 14px;
+        --cart-quantity-width: 104px;
+        --cart-grid-template: var(--cart-thumb-size) minmax(0, 1fr) var(--cart-quantity-width);
     }
 
+    /* Smaller header tabs keep both mobile labels on one line. */
+    .cart-heading {
+        grid-row: 1;
+        padding-inline: 8px;
+        font-size: 6.5pt;
+    }
+
+    /*
+        Mobile item heading.
+        The original HTML text remains for desktop, but the visible phone label is
+        replaced below with a shorter pseudo-element centered over the thumbnail.
+    */
+    .cart-heading--items {
+        grid-column: 1;
+        justify-self: center;
+        color: transparent;
+        min-width: 0;
+        font-size: 0;
+        text-shadow: none;
+    }
+
+    /* Short phone label that fits above the thumbnail column. */
+    .cart-heading--items::after {
+        content: "ITEM / PRICE";
+        position: static;
+        color: #121212;
+        font-size: 6.5pt;
+        line-height: 1;
+        text-shadow: 0 -0.5px 0 #767676;
+    }
+
+    /* The price column becomes redundant on phones because price moves below the item name. */
+    .cart-heading--total {
+        display: none;
+    }
+
+    /* Two-row phone item layout: title on top, price below, quantity spanning both rows. */
     .cart-row {
-        row-gap: 7px;
+        grid-template-rows: auto auto;
+        row-gap: 4px;
         height: auto;
         align-items: center;
-        padding-top: 10px;
+        min-height: 95px;
+        padding-top: 12px;
         padding-bottom: 12px;
     }
 
+    /* Thumbnail spans title and price rows so the product art stays vertically centered. */
+    .cart-item-media {
+        grid-row: 1 / 3;
+    }
+
+    /*
+        Phone item title.
+        It is intentionally single-line with ellipsis so long product names do not
+        push the quantity capsule or price out of alignment.
+    */
     .cart-item-title {
-        font-size: 12pt;
-    }
-
-    .cart-quantity-cell {
         grid-column: 2;
-        grid-row: 2;
+        grid-row: 1;
+        align-self: end;
         min-width: 0;
-        width: min(100%, 142px);
+        max-width: 100%;
+        overflow: hidden;
+        font-size: 7.8pt;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 
+    /* Quantity capsule is pinned to the right and vertically centered beside title and price. */
+    .cart-quantity-cell {
+        grid-column: 3;
+        grid-row: 1 / 3;
+        align-self: center;
+        justify-self: end;
+        min-width: 0;
+        transform: none;
+        width: var(--cart-quantity-width);
+    }
+
+    /* Phone capsule dimensions are compact but still wide enough for three controls. */
     .cart-quantity-control {
-        grid-template-columns: 26px minmax(28px, 1fr) 26px;
-        width: 134px;
-        height: 41px;
-        padding: 5px 6px;
+        grid-template-columns: 22px minmax(24px, 1fr) 22px;
+        width: 104px;
+        height: 39px;
+        padding: 4px 5px;
     }
 
+    /* Remove confirmation is slightly taller than the compact capsule so both text lines breathe. */
     .cart-remove-confirmation {
         height: 46px;
         padding: 5px 7px;
     }
 
+    /* Slightly larger icon buttons improve tap accuracy on phones. */
     .cart-quantity-button {
-        --quantity-icon-size: 14px;
+        --quantity-icon-size: 12px;
         --quantity-icon-stroke: 2px;
-        width: 26px;
-        height: 26px;
+        width: 22px;
+        height: 22px;
     }
 
+    /* Quantity number grows a little so it remains readable inside the smaller capsule. */
     .cart-quantity-value {
-        font-size: 17px;
+        font-size: 16px;
     }
 
+    /* On phones, the line total sits below the item name in the middle column. */
     .cart-line-total {
-        grid-column: 1 / -1;
-        grid-row: 3;
+        grid-column: 2;
+        grid-row: 2;
+        align-self: start;
         justify-self: start;
-        font-size: 24px;
+        font-size: 15.4px;
     }
 
     /* Slightly reduced top padding brings the product grid into view sooner. */
     .container {
         padding-top: 28px;
-    }
-
-    .cart-container {
-        padding-top: 0;
     }
 
     /* The top background gradient is shorter because the single-column card stack begins higher. */

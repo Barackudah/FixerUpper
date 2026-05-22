@@ -4,29 +4,9 @@ require_once __DIR__ . '/session.php';
 
 require_once __DIR__ . '/config.php';
 
-function e($value)
-{
-    return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
-}
+require_once __DIR__ . '/helpers.php';
 
-function productPrice($price)
-{
-    return '&pound; ' . number_format((float) $price, 0, '.', '');
-}
-
-function cartBadgeCount($cart)
-{
-    $count = 0;
-
-    foreach ($cart as $quantity) {
-        if ((int) $quantity > 0) {
-            $count++;
-        }
-    }
-
-    return $count;
-}
-
+// Decide which decorative divider variants are visible at each responsive breakpoint.
 function productDividerClasses($position)
 {
     $classes = ['products-dots', 'products-dots--inline'];
@@ -41,6 +21,8 @@ function productDividerClasses($position)
 }
 
 $productsById = [];
+
+// Load the main product records first; related images and specs are attached below.
 $productResult = $conn->query(
     'SELECT id, slug, name, short_description, price, main_image
      FROM products
@@ -56,6 +38,7 @@ while ($product = $productResult->fetch_assoc()) {
 
 $productIds = array_keys($productsById);
 
+// Fetch related product media and specification rows in two batch queries.
 if ($productIds) {
     $idList = implode(',', $productIds);
 
@@ -84,6 +67,7 @@ if ($productIds) {
     }
 }
 
+// Re-index products for rendering while keeping a slug-keyed map for the modal script.
 $products = array_values($productsById);
 $modalProducts = [];
 
@@ -97,6 +81,7 @@ $cartEndpoint = ($basePath === '' ? '' : $basePath) . '/add_to_cart.php';
 foreach ($products as $product) {
     $images = [];
 
+    // Prefer gallery images when they exist, otherwise fall back to the main product image.
     foreach ($product['images'] as $image) {
         $images[] = [
             'src' => $image['image_path'],
@@ -113,10 +98,12 @@ foreach ($products as $product) {
 
     $details = [];
 
+    // Convert database spec rows into the compact [label, value] shape used by JS.
     foreach ($product['specs'] as $spec) {
         $details[] = [$spec['label'], $spec['value']];
     }
 
+    // Expose only the fields the modal needs instead of sending raw database rows.
     $modalProducts[$product['slug']] = [
         'id' => (int) $product['id'],
         'slug' => $product['slug'],

@@ -1,28 +1,17 @@
 <?php
+// Resume the visitor session so this endpoint can read and change the cart array.
 require_once __DIR__ . '/session.php';
 
+// Load the database connection used to verify product ids and prices.
 require_once __DIR__ . '/config.php';
 
+// Shared cart-count and price-format helpers keep JSON responses consistent.
+require_once __DIR__ . '/helpers.php';
+
+// Every response from this endpoint is JSON because it is called by cart.js.
 header('Content-Type: application/json; charset=utf-8');
 
-function cartCount()
-{
-    $count = 0;
-
-    foreach ($_SESSION['cart'] ?? [] as $quantity) {
-        if ((int) $quantity > 0) {
-            $count++;
-        }
-    }
-
-    return $count;
-}
-
-function cartPrice($price)
-{
-    return '&pound; ' . number_format((float) $price, 2, ',', ' ');
-}
-
+// Reject direct browser visits and keep cart mutations limited to POST requests.
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
     echo json_encode([
@@ -33,10 +22,16 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
+// All cart rows post a numeric database product id.
 $productId = (int) ($_POST['product_id'] ?? 0);
+
+// The action decides whether the endpoint updates quantity or removes a row.
 $action = (string) ($_POST['action'] ?? 'update');
+
+// Quantity is required for updates and intentionally ignored for remove actions.
 $quantity = (int) ($_POST['quantity'] ?? 0);
 
+// Remove actions do not need a positive quantity, but quantity updates do.
 if ($productId < 1 || ($action !== 'remove' && $quantity < 1)) {
     http_response_code(400);
     echo json_encode([
@@ -47,6 +42,7 @@ if ($productId < 1 || ($action !== 'remove' && $quantity < 1)) {
     exit;
 }
 
+// Removing only touches the session cart; the products table remains unchanged.
 if ($action === 'remove') {
     unset($_SESSION['cart'][$productId]);
 
@@ -58,13 +54,16 @@ if ($action === 'remove') {
     exit;
 }
 
+// Keep the quantity within a reasonable display range before recalculating totals.
 $quantity = min($quantity, 99);
 
+// Fetch the active product price so totals always come from the database, not the client.
 $stmt = $conn->prepare('SELECT id, price FROM products WHERE is_active = 1 AND id = ? LIMIT 1');
 $stmt->bind_param('i', $productId);
 $stmt->execute();
 $product = $stmt->get_result()->fetch_assoc();
 
+// A missing product means the cart row is stale or the product was disabled.
 if (!$product) {
     http_response_code(404);
     echo json_encode([
@@ -75,6 +74,7 @@ if (!$product) {
     exit;
 }
 
+// Do not create new cart rows here; adding products is handled by add_to_cart.php.
 if (!isset($_SESSION['cart'][$productId]) || (int) $_SESSION['cart'][$productId] < 1) {
     http_response_code(404);
     echo json_encode([
@@ -85,11 +85,13 @@ if (!isset($_SESSION['cart'][$productId]) || (int) $_SESSION['cart'][$productId]
     exit;
 }
 
+// Persist the new quantity in the session and return the updated line total.
 $_SESSION['cart'][$productId] = $quantity;
 
 $unitPrice = (float) $product['price'];
 $lineTotal = $unitPrice * $quantity;
 
+// Send back only the pieces of state the existing cart row needs to refresh.
 echo json_encode([
     'success' => true,
     'quantity' => $quantity,
