@@ -116,8 +116,7 @@ $updateCartEndpoint = ($basePath === '' ? '' : $basePath) . '/update_cart.php';
                     <div class="cart-header" aria-hidden="true">
                         <span class="cart-heading cart-heading--items">ITEMS</span>
                         <span class="cart-heading cart-heading--quantity">QUANTITY</span>
-                        <span class="cart-heading cart-heading--price">PRICE</span>
-                        <span class="cart-heading cart-heading--total">TOTAL</span>
+                        <span class="cart-heading cart-heading--total">TOTAL PRICE</span>
                     </div>
 
                     <?php foreach ($cartItems as $item): ?>
@@ -129,7 +128,6 @@ $updateCartEndpoint = ($basePath === '' ? '' : $basePath) . '/update_cart.php';
                             class="cart-row"
                             data-cart-row
                             data-product-id="<?= (int) $product['id']; ?>"
-                            data-unit-price="<?= e($product['price']); ?>"
                         >
                             <a class="cart-item-media" href="index.php#<?= e($product['slug']); ?>" aria-label="<?= e($product['name']); ?>">
                                 <img src="<?= e($product['main_image']); ?>" alt="<?= e($product['name']); ?>" onerror="this.onerror=null; this.src='assets/images/pc_1.png';">
@@ -139,15 +137,20 @@ $updateCartEndpoint = ($basePath === '' ? '' : $basePath) . '/update_cart.php';
                                 <?= e($product['name']); ?>
                             </a>
 
-                            <div class="cart-quantity-control" aria-label="Quantity">
-                                <button class="cart-quantity-button" type="button" data-cart-step="-1" aria-label="Decrease quantity"<?= $quantity <= 1 ? ' disabled' : ''; ?>>&minus;</button>
-                                <span class="cart-quantity-value" data-cart-quantity><?= $quantity; ?></span>
-                                <button class="cart-quantity-button" type="button" data-cart-step="1" aria-label="Increase quantity">+</button>
-                            </div>
-
-                            <div class="cart-price-breakdown">
-                                <span data-cart-unit-price<?= $quantity <= 1 ? ' hidden' : ''; ?>><?= cartPrice($product['price']); ?></span>
-                                <span class="cart-price-multiplier" data-cart-multiplier<?= $quantity <= 1 ? ' hidden' : ''; ?>><?= $quantity > 1 ? 'x ' . $quantity : ''; ?></span>
+                            <div class="cart-quantity-cell" data-cart-quantity-cell>
+                                <div class="cart-quantity-control" aria-label="Quantity">
+                                    <button class="cart-quantity-button" type="button" data-cart-step="-1" aria-label="Decrease quantity">&minus;</button>
+                                    <span class="cart-quantity-value" data-cart-quantity><?= $quantity; ?></span>
+                                    <button class="cart-quantity-button" type="button" data-cart-step="1" aria-label="Increase quantity">+</button>
+                                </div>
+                                <div class="cart-remove-confirmation" data-cart-remove-confirmation hidden>
+                                    <span class="cart-remove-label">REMOVE ITEM?</span>
+                                    <span class="cart-remove-options">
+                                        <button class="cart-remove-choice" type="button" data-cart-remove-confirm="yes">yes</button>
+                                        <span class="cart-remove-separator" aria-hidden="true">/</span>
+                                        <button class="cart-remove-choice" type="button" data-cart-remove-confirm="no">no</button>
+                                    </span>
+                                </div>
                             </div>
 
                             <div class="cart-line-total" data-cart-line-total><?= cartPrice($item['line_total']); ?></div>

@@ -19,7 +19,7 @@
     function setRowBusy(row, isBusy) {
         row.classList.toggle("is-busy", isBusy);
 
-        row.querySelectorAll("[data-cart-step]").forEach((button) => {
+        row.querySelectorAll("[data-cart-step], [data-cart-remove-confirm]").forEach((button) => {
             button.disabled = isBusy;
         });
     }
@@ -28,39 +28,115 @@
         const decreaseButton = row.querySelector("[data-cart-step='-1']");
 
         if (decreaseButton) {
-            decreaseButton.disabled = quantity <= 1;
+            decreaseButton.disabled = quantity < 1;
         }
+    }
+
+    function setPendingRemove(row, isPending) {
+        const quantityControl = row.querySelector(".cart-quantity-control");
+        const removeConfirmation = row.querySelector("[data-cart-remove-confirmation]");
+
+        row.classList.toggle("is-remove-pending", isPending);
+
+        if (quantityControl) {
+            quantityControl.hidden = isPending;
+        }
+
+        if (removeConfirmation) {
+            removeConfirmation.hidden = !isPending;
+            removeConfirmation.querySelectorAll("[data-cart-remove-confirm]").forEach((button) => {
+                button.disabled = false;
+            });
+        }
+    }
+
+    function showEmptyCart() {
+        const cartPage = document.querySelector(".cart-page");
+
+        table.remove();
+
+        if (!cartPage || cartPage.querySelector(".cart-empty")) {
+            return;
+        }
+
+        const emptyMessage = document.createElement("p");
+        emptyMessage.className = "cart-empty";
+        emptyMessage.textContent = "Your cart is empty.";
+        cartPage.append(emptyMessage);
     }
 
     function renderRowTotals(row, result) {
         const quantity = Number(result.quantity) || 1;
         const quantityTarget = row.querySelector("[data-cart-quantity]");
-        const unitPriceTarget = row.querySelector("[data-cart-unit-price]");
-        const multiplierTarget = row.querySelector("[data-cart-multiplier]");
         const lineTotalTarget = row.querySelector("[data-cart-line-total]");
 
         if (quantityTarget) {
             quantityTarget.textContent = quantity;
         }
 
-        if (unitPriceTarget && result.formatted_unit_price) {
-            unitPriceTarget.hidden = quantity <= 1;
-            unitPriceTarget.innerHTML = result.formatted_unit_price;
-        }
-
-        if (multiplierTarget) {
-            multiplierTarget.hidden = quantity <= 1;
-            multiplierTarget.textContent = quantity > 1 ? `x ${quantity}` : "";
-        }
-
         if (lineTotalTarget && result.formatted_line_total) {
             lineTotalTarget.innerHTML = result.formatted_line_total;
         }
 
+        setPendingRemove(row, false);
         refreshDecreaseState(row, quantity);
     }
 
     table.addEventListener("click", async (event) => {
+        const removeChoice = event.target.closest("[data-cart-remove-confirm]");
+
+        if (removeChoice) {
+            const row = removeChoice.closest("[data-cart-row]");
+            const quantityTarget = row ? row.querySelector("[data-cart-quantity]") : null;
+
+            if (!row) {
+                return;
+            }
+
+            if (removeChoice.dataset.cartRemoveConfirm === "no") {
+                if (quantityTarget) {
+                    quantityTarget.textContent = "1";
+                }
+
+                setPendingRemove(row, false);
+                refreshDecreaseState(row, 1);
+                return;
+            }
+
+            setRowBusy(row, true);
+
+            try {
+                const response = await fetch(endpoint, {
+                    method: "POST",
+                    credentials: "same-origin",
+                    headers: {
+                        "Content-Type": "application/x-www-form-urlencoded"
+                    },
+                    body: new URLSearchParams({
+                        action: "remove",
+                        product_id: row.dataset.productId
+                    })
+                });
+                const result = await response.json();
+
+                if (!response.ok || !result.success) {
+                    throw new Error(result.message || "Unable to remove cart item.");
+                }
+
+                row.remove();
+                updateCartBadge(result.cart_count);
+
+                if (!table.querySelector("[data-cart-row]")) {
+                    showEmptyCart();
+                }
+            } catch (error) {
+                console.error(error);
+                setRowBusy(row, false);
+            }
+
+            return;
+        }
+
         const button = event.target.closest("[data-cart-step]");
 
         if (!button) {
@@ -76,10 +152,15 @@
 
         const currentQuantity = Number(quantityTarget.textContent) || 1;
         const step = Number(button.dataset.cartStep) || 0;
-        const nextQuantity = Math.max(1, currentQuantity + step);
+        const nextQuantity = Math.max(0, currentQuantity + step);
 
         if (nextQuantity === currentQuantity) {
             refreshDecreaseState(row, currentQuantity);
+            return;
+        }
+
+        if (nextQuantity === 0) {
+            setPendingRemove(row, true);
             return;
         }
 

@@ -34,13 +34,25 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 $productId = (int) ($_POST['product_id'] ?? 0);
+$action = (string) ($_POST['action'] ?? 'update');
 $quantity = (int) ($_POST['quantity'] ?? 0);
 
-if ($productId < 1 || $quantity < 1) {
+if ($productId < 1 || ($action !== 'remove' && $quantity < 1)) {
     http_response_code(400);
     echo json_encode([
         'success' => false,
         'message' => 'Invalid cart item.',
+        'cart_count' => cartCount(),
+    ]);
+    exit;
+}
+
+if ($action === 'remove') {
+    unset($_SESSION['cart'][$productId]);
+
+    echo json_encode([
+        'success' => true,
+        'removed' => true,
         'cart_count' => cartCount(),
     ]);
     exit;
@@ -82,6 +94,5 @@ echo json_encode([
     'success' => true,
     'quantity' => $quantity,
     'cart_count' => cartCount(),
-    'formatted_unit_price' => cartPrice($unitPrice),
     'formatted_line_total' => cartPrice($lineTotal),
 ]);
