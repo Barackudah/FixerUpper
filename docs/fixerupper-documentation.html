@@ -91,6 +91,11 @@
             column-gap: 24px;
         }
 
+        .columns > h2 {
+            -webkit-column-span: all;
+            column-span: all;
+        }
+
         .columns p,
         .note,
         .conclusion p {
@@ -112,6 +117,7 @@
             font-size: 10.7pt;
             font-weight: 600;
             letter-spacing: 0.7px;
+            text-align: center;
             text-transform: uppercase;
         }
 
@@ -151,6 +157,10 @@
             grid-template-columns: 1fr 1fr;
         }
 
+        .figure-row--mobile {
+            align-items: center;
+        }
+
         .caption {
             margin-top: 6px;
             color: var(--muted);
@@ -162,8 +172,7 @@
             break-before: page;
         }
 
-        .schema-shot,
-        .conclusion {
+        .schema-shot {
             padding: 12px;
             border: 1px solid rgba(255, 255, 255, 0.12);
             border-radius: 8px;
@@ -171,8 +180,26 @@
         }
 
         .conclusion {
-            padding: 13px 16px;
-            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 6px 0 #262626;
+            padding: 0;
+        }
+
+        .section-top-gap {
+            padding-top: 16px;
+        }
+
+        .section-top-gap h2 {
+            margin-top: 0;
+        }
+
+        .seed-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 24px;
+        }
+
+        .seed-grid p {
+            margin: 0 0 9px;
+            text-align: justify;
         }
 
         .erd {
@@ -250,9 +277,12 @@
 
         <div class="dots"></div>
 
-        <section class="columns">
+        <section class="section-top-gap">
             <h2>IV. Data and Seed Strategy</h2>
-            <p>The SQL seed creates six active PC products, one gallery image per product, and full modal specifications. Inserts use `ON DUPLICATE KEY UPDATE`, making the seed idempotent. This is useful for local development because the database can be re-imported without duplicating products, images, or specification rows. The current cart remains session-based, so order tables are prepared for future work but are not yet written by the UI.</p>
+            <div class="seed-grid">
+                <p>The SQL seed creates six active PC products, one gallery image per product, and full modal specifications. Inserts use `ON DUPLICATE KEY UPDATE`, making the seed idempotent.</p>
+                <p>This is useful for local development because the database can be re-imported without duplicating products, images, or specification rows. The current cart remains session-based, so order tables are prepared for future work but are not yet written by the UI.</p>
+            </div>
         </section>
 
         <div class="dots"></div>
@@ -346,14 +376,14 @@
         <section class="page-break">
             <h2>VII. Mobile Interface Screenshots</h2>
             <p class="note">The mobile captures demonstrate the optimized single-column storefront, stacked modal presentation, and compact cart row. The layout keeps stable control sizes and uses row-scoped backgrounds to avoid duplicated gradients or stripes.</p>
-            <div class="figure-row">
-                <div class="figure">
-                    <img src="screenshots/mobile-homepage.png" alt="Mobile homepage screenshot">
-                    <div class="caption">Figure 5. Mobile storefront card stack.</div>
-                </div>
+            <div class="figure-row figure-row--mobile">
                 <div class="figure">
                     <img src="screenshots/mobile-modal.png" alt="Mobile modal screenshot">
                     <div class="caption">Figure 6. Mobile product details modal.</div>
+                </div>
+                <div class="figure">
+                    <img src="screenshots/mobile-homepage.png" alt="Mobile homepage screenshot">
+                    <div class="caption">Figure 5. Mobile storefront card stack.</div>
                 </div>
                 <div class="figure">
                     <img src="screenshots/mobile-cart.png" alt="Mobile cart screenshot">
