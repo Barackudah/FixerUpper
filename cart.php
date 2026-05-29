@@ -8,6 +8,10 @@ require_once __DIR__ . '/config.php';
 // Shared formatting and escaping helpers keep cart output consistent with the storefront.
 require_once __DIR__ . '/helpers.php';
 
+require_once __DIR__ . '/inventory_helpers.php';
+
+ensureInventoryTable($conn);
+
 // Clean the session cart so invalid ids and zero quantities never reach the query.
 function normalizeCart($cart)
 {
@@ -33,9 +37,16 @@ $cartItems = [];
 if ($cartQuantities) {
     $idList = implode(',', array_keys($cartQuantities));
     $productResult = $conn->query(
-        "SELECT id, slug, name, price, main_image
-         FROM products
-         WHERE is_active = 1 AND id IN ($idList)"
+        "SELECT
+            p.id,
+            p.slug,
+            p.name,
+            p.price,
+            p.main_image,
+            COALESCE(i.stock_quantity, 0) AS stock_quantity
+         FROM products p
+         LEFT JOIN product_inventory i ON i.product_id = p.id
+         WHERE p.is_active = 1 AND p.id IN ($idList)"
     );
 
     while ($product = $productResult->fetch_assoc()) {
@@ -95,6 +106,7 @@ $updateCartEndpoint = ($basePath === '' ? '' : $basePath) . '/update_cart.php';
         <div class="nav-menu">
             <a href="index.php">HOME</a>
             <a href="index.php#about">ABOUT US</a>
+            <a href="inventory.php">INVENTORY</a>
             <a href="index.php#contacts">CONTACTS</a>
         </div>
 
@@ -119,6 +131,7 @@ $updateCartEndpoint = ($basePath === '' ? '' : $basePath) . '/update_cart.php';
     <main class="container cart-container">
         <!-- The cart table is rendered only when the visitor has active cart items. -->
         <section class="cart-page" aria-label="Shopping cart">
+            <p class="cart-message" data-cart-message role="status" aria-live="polite"></p>
             <?php if (!$cartItems): ?>
                 <!-- Empty-state fallback shown by PHP and recreated by JavaScript after final removal. -->
                 <p class="cart-empty">Your cart is empty.</p>
@@ -137,12 +150,15 @@ $updateCartEndpoint = ($basePath === '' ? '' : $basePath) . '/update_cart.php';
                             // Keep the template below short by unpacking the current row values first.
                             $product = $item['product'];
                             $quantity = (int) $item['quantity'];
+                            $stockQuantity = (int) $product['stock_quantity'];
+                            $stockStatus = inventoryStatus($stockQuantity);
                         ?>
                         <!-- Each row carries the product id used by cart.js when posting updates. -->
                         <article
                             class="cart-row"
                             data-cart-row
                             data-product-id="<?= (int) $product['id']; ?>"
+                            data-stock-available="<?= (int) $product['stock_quantity']; ?>"
                         >
                             <!-- Product image links back to the matching storefront modal anchor. -->
                             <a class="cart-item-media" href="index.php#<?= e($product['slug']); ?>" aria-label="<?= e($product['name']); ?>">
@@ -152,6 +168,9 @@ $updateCartEndpoint = ($basePath === '' ? '' : $basePath) . '/update_cart.php';
                             <!-- Product name also links back to the storefront for quick inspection. -->
                             <a class="cart-item-title" href="index.php#<?= e($product['slug']); ?>">
                                 <?= e($product['name']); ?>
+                                <span class="cart-item-stock cart-item-stock--<?= e($stockStatus); ?>">
+                                    <?= e(inventoryStockText($stockQuantity)); ?>
+                                </span>
                             </a>
 
                             <!-- Quantity cell contains both normal controls and the hidden remove prompt. -->

@@ -127,6 +127,7 @@
     const modalDots = document.getElementById("modal-product-dots");
     const modalText = document.getElementById("modal-product-text");
     const modalPrice = document.getElementById("modal-product-price");
+    const modalStock = document.getElementById("modal-product-stock");
     const modalCopy = modal.querySelector(".product-modal__copy");
     const modalScrollbar = modal.querySelector(".product-modal__scrollbar");
     const modalScrollbarThumb = modal.querySelector(".product-modal__scrollbar-thumb");
@@ -377,6 +378,38 @@
         cartBadge.textContent = cartCount > 0 ? cartCount : "";
     }
 
+    function updateModalStock(product) {
+        if (!product) {
+            if (modalStock) {
+                modalStock.textContent = "";
+                modalStock.dataset.status = "";
+            }
+
+            if (cartButton) {
+                cartButton.disabled = false;
+                cartButton.textContent = "Add to Cart";
+            }
+
+            return;
+        }
+
+        const hasStockQuantity = Object.prototype.hasOwnProperty.call(product, "stockQuantity");
+        const stockQuantity = hasStockQuantity ? Number(product.stockQuantity) || 0 : 1;
+        const stockStatus = product.stockStatus || (stockQuantity > 0 ? "in" : "out");
+
+        if (modalStock) {
+            modalStock.textContent = product.stockText || (hasStockQuantity
+                ? (stockQuantity > 0 ? `${stockQuantity} in stock` : "out of stock")
+                : "in stock");
+            modalStock.dataset.status = stockStatus;
+        }
+
+        if (cartButton) {
+            cartButton.disabled = stockStatus === "out";
+            cartButton.textContent = stockStatus === "out" ? "Out of Stock" : "Add to Cart";
+        }
+    }
+
     /*
      * Shows the add-to-cart result without changing the modal layout. Duplicate
      * products use the same live region so screen-reader users hear the message.
@@ -486,6 +519,7 @@
 
         modalTitle.textContent = product.title;
         modalPrice.innerHTML = product.price;
+        updateModalStock(product);
         renderDetails(product);
         renderDots(getSlides(product));
         setSlide(0);
@@ -513,6 +547,7 @@
         activeProduct = null;
         activeProductId = null;
         showCartMessage("", "");
+        updateModalStock(null);
 
         if (cartButton) {
             delete cartButton.dataset.productId;
@@ -531,6 +566,15 @@
         const productId = cartButton ? cartButton.dataset.productId || activeProductId : activeProductId;
 
         if (!productId || !cartButton) {
+            return;
+        }
+
+        if (
+            activeProduct
+            && Object.prototype.hasOwnProperty.call(activeProduct, "stockQuantity")
+            && (Number(activeProduct.stockQuantity) || 0) < 1
+        ) {
+            showCartMessage("This product is out of stock.", "error");
             return;
         }
 
@@ -565,9 +609,9 @@
             showCartMessage(result.message || "Added to cart.", "success");
         } catch (error) {
             console.error(error);
-            showCartMessage("Unable to add product to cart.", "error");
+            showCartMessage(error.message || "Unable to add product to cart.", "error");
         } finally {
-            cartButton.disabled = false;
+            updateModalStock(activeProduct);
         }
     }
 

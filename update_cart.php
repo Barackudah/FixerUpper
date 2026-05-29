@@ -8,6 +8,10 @@ require_once __DIR__ . '/config.php';
 // Shared cart-count and price-format helpers keep JSON responses consistent.
 require_once __DIR__ . '/helpers.php';
 
+require_once __DIR__ . '/inventory_helpers.php';
+
+ensureInventoryTable($conn);
+
 // Every response from this endpoint is JSON because it is called by cart.js.
 header('Content-Type: application/json; charset=utf-8');
 
@@ -57,8 +61,17 @@ if ($action === 'remove') {
 // Keep the quantity within a reasonable display range before recalculating totals.
 $quantity = min($quantity, 99);
 
-// Fetch the active product price so totals always come from the database, not the client.
-$stmt = $conn->prepare('SELECT id, price FROM products WHERE is_active = 1 AND id = ? LIMIT 1');
+// Fetch the active product price and stock so totals and availability stay server-side.
+$stmt = $conn->prepare(
+    'SELECT
+        p.id,
+        p.price,
+        COALESCE(i.stock_quantity, 0) AS stock_quantity
+     FROM products p
+     LEFT JOIN product_inventory i ON i.product_id = p.id
+     WHERE p.is_active = 1 AND p.id = ?
+     LIMIT 1'
+);
 $stmt->bind_param('i', $productId);
 $stmt->execute();
 $product = $stmt->get_result()->fetch_assoc();
@@ -85,6 +98,24 @@ if (!isset($_SESSION['cart'][$productId]) || (int) $_SESSION['cart'][$productId]
     exit;
 }
 
+$availableStock = (int) $product['stock_quantity'];
+
+if ($quantity > $availableStock) {
+    $currentQuantity = (int) $_SESSION['cart'][$productId];
+    $lineTotal = (float) $product['price'] * $currentQuantity;
+
+    http_response_code(409);
+    echo json_encode([
+        'success' => false,
+        'message' => $availableStock > 0 ? 'Only ' . $availableStock . ' available.' : 'This product is out of stock.',
+        'quantity' => $currentQuantity,
+        'cart_count' => cartCount(),
+        'stock_quantity' => $availableStock,
+        'formatted_line_total' => cartPrice($lineTotal),
+    ]);
+    exit;
+}
+
 // Persist the new quantity in the session and return the updated line total.
 $_SESSION['cart'][$productId] = $quantity;
 
@@ -96,5 +127,6 @@ echo json_encode([
     'success' => true,
     'quantity' => $quantity,
     'cart_count' => cartCount(),
+    'stock_quantity' => $availableStock,
     'formatted_line_total' => cartPrice($lineTotal),
 ]);

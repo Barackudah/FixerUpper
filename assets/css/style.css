@@ -346,6 +346,37 @@ nav::after {
     text-align: center;
 }
 
+.product-stock {
+    align-self: center;
+    min-height: 22px;
+    margin: 9px auto 14px;
+    padding: 5px 11px 4px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    background: rgba(27, 27, 27, 0.48);
+    color: #bdbdbd;
+    font-size: 8pt;
+    font-weight: 500;
+    line-height: 1;
+    text-align: center;
+    text-transform: none;
+}
+
+.product-stock--in {
+    color: #9cff42;
+    border-color: rgba(126, 255, 0, 0.22);
+}
+
+.product-stock--low {
+    color: #ffd36c;
+    border-color: rgba(255, 211, 108, 0.3);
+}
+
+.product-stock--out {
+    color: #ff8d8d;
+    border-color: rgba(255, 141, 141, 0.3);
+}
+
 /* The card footer separates the price and the link to opposite sides. */
 .product-footer {
     display: flex;
@@ -639,11 +670,11 @@ nav::after {
     padding-top: 0;
 }
 
-.cart-body--filled nav::after {
+.cart-body--filled .cart-container::before {
     content: none;
 }
 
-.cart-body--filled .cart-container::before {
+.cart-body--filled nav::after {
     content: none;
 }
 
@@ -668,14 +699,6 @@ nav::after {
     margin-top: 0;
 }
 
-.cart-body--filled .cart-row {
-    background: linear-gradient(
-        180deg,
-        #2e2e2e 0%,
-        #333333 100%
-    );
-}
-
 /*
     Cart table grid.
     Custom properties define the full table geometry once, then header rows and item
@@ -689,15 +712,33 @@ nav::after {
     --cart-quantity-width: 98px;
     --cart-total-width: 150px;
     --cart-grid-template: var(--cart-thumb-size) minmax(270px, 1fr) var(--cart-quantity-width) var(--cart-total-width);
+    position: relative;
     display: grid;
     grid-template-columns: var(--cart-grid-template);
     column-gap: var(--cart-column-gap);
     width: 100%;
 }
 
+.cart-body--filled .cart-table::before {
+    content: "";
+    position: absolute;
+    top: 24px;
+    right: 0;
+    left: 0;
+    height: 156px;
+    background: linear-gradient(
+        180deg,
+        #2e2e2e 0%,
+        #333333 100%
+    );
+    pointer-events: none;
+    z-index: 0;
+}
+
 /* Header tabs share the cart grid and extend across the full table width. */
 .cart-header {
     position: relative;
+    z-index: 1;
     display: grid;
     grid-column: 1 / -1;
     grid-template-columns: var(--cart-grid-template);
@@ -768,6 +809,7 @@ nav::after {
 /* Each cart item row uses the same columns as the header for stable alignment. */
 .cart-row {
     position: relative;
+    z-index: 1;
     display: grid;
     grid-column: 1 / -1;
     grid-template-columns: var(--cart-grid-template);
@@ -850,6 +892,52 @@ nav::after {
     text-decoration: none;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+.cart-item-stock {
+    display: block;
+    margin-top: 5px;
+    color: #9cff42;
+    font-size: 8pt;
+    font-weight: 500;
+    line-height: 1;
+    text-transform: none;
+}
+
+.cart-item-stock--low {
+    color: #ffd36c;
+}
+
+.cart-item-stock--out {
+    color: #ff8d8d;
+}
+
+.cart-message {
+    position: relative;
+    z-index: 1;
+    min-height: 0;
+    height: 0;
+    margin: 0 auto;
+    overflow: hidden;
+    color: #ff8d8d;
+    font-size: 10pt;
+    font-weight: 500;
+    line-height: 1.25;
+    text-align: center;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.cart-message.is-visible {
+    min-height: 28px;
+    height: auto;
+    margin-bottom: 8px;
+    overflow: visible;
+    opacity: 1;
+}
+
+.cart-message[data-tone="error"] {
+    color: #ff8d8d;
 }
 
 /* Quantity cell positions the capsule in the third grid column. */
@@ -1035,7 +1123,9 @@ nav::after {
     as one visual symbol, avoiding overlap artifacts between separate lines.
 */
 .cart-quantity-button[data-cart-step="1"]::before,
-.cart-quantity-button[data-cart-step="1"]::after {
+.cart-quantity-button[data-cart-step="1"]::after,
+.cart-quantity-button[data-inventory-step="1"]::before,
+.cart-quantity-button[data-inventory-step="1"]::after {
     width: var(--quantity-icon-size);
     height: var(--quantity-icon-size);
     border-radius: 0;
@@ -1113,6 +1203,186 @@ nav::after {
     color: rgba(255, 255, 255, 0.78);
     font-size: 22px;
     font-weight: 400;
+}
+
+.inventory-container {
+    padding-top: 0;
+}
+
+.inventory-header {
+    padding-inline: var(--cart-edge-gap);
+}
+
+.inventory-notice {
+    color: #95ff38;
+}
+
+.inventory-table {
+    --inventory-status-width: 108px;
+    --inventory-field-width: 112px;
+    --inventory-location-width: 152px;
+    --inventory-supplier-width: 162px;
+    --cart-grid-template:
+        var(--cart-thumb-size)
+        minmax(210px, 1fr)
+        var(--inventory-status-width)
+        var(--inventory-field-width)
+        minmax(110px, var(--inventory-location-width))
+        minmax(120px, var(--inventory-supplier-width));
+}
+
+.inventory-heading--status {
+    grid-column: 3;
+}
+
+.inventory-heading--stock {
+    grid-column: 4;
+}
+
+.inventory-heading--location {
+    grid-column: 5;
+}
+
+.inventory-heading--supplier {
+    grid-column: 6;
+}
+
+.inventory-status {
+    display: inline-flex;
+    grid-column: 3;
+    align-items: center;
+    justify-content: center;
+    justify-self: center;
+    min-height: 26px;
+    padding: 6px 9px 5px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    color: #bdbdbd;
+    background: rgba(27, 27, 27, 0.48);
+    font-size: 8pt;
+    font-weight: 500;
+    line-height: 1;
+    text-align: center;
+    text-transform: none;
+    white-space: nowrap;
+}
+
+.inventory-status--in {
+    color: #9cff42;
+    border-color: rgba(126, 255, 0, 0.22);
+}
+
+.inventory-status--low {
+    color: #ffd36c;
+    border-color: rgba(255, 211, 108, 0.3);
+}
+
+.inventory-status--out {
+    color: #ff8d8d;
+    border-color: rgba(255, 141, 141, 0.3);
+}
+
+.inventory-quantity-cell {
+    transform: none;
+    width: var(--inventory-field-width);
+}
+
+.inventory-quantity-cell--stock {
+    grid-column: 4;
+}
+
+.inventory-quantity-control {
+    width: 98px;
+}
+
+.inventory-text-field {
+    display: block;
+    align-self: center;
+    min-width: 0;
+}
+
+.inventory-text-field--location {
+    grid-column: 5;
+}
+
+.inventory-text-field--supplier {
+    grid-column: 6;
+}
+
+.inventory-text-field input {
+    width: 100%;
+    min-width: 0;
+    height: 33px;
+    border: 2px solid #626262;
+    border-radius: 8px;
+    padding: 0 9px;
+    color: #ffffff;
+    background: linear-gradient(180deg, #3a3a3a 0%, #484848 100%);
+    box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.18);
+    font-family: 'Montserrat', sans-serif;
+    font-size: 8.5pt;
+    line-height: 1;
+}
+
+.inventory-text-field input:focus {
+    outline: 0;
+    border-color: #7a7a7a;
+}
+
+.inventory-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 20px var(--cart-edge-gap) 0;
+}
+
+.inventory-action-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 33px;
+    border: 0;
+    padding: 0;
+    color: #ffffff;
+    background: transparent;
+    cursor: pointer;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 8.5pt;
+    font-weight: 500;
+    line-height: 1;
+    filter: drop-shadow(0 1px 0 #151515);
+    transition: color 0.22s ease, filter 0.22s ease;
+}
+
+.inventory-action-icon {
+    display: block;
+    width: 13px;
+    height: 13px;
+    flex: 0 0 auto;
+    background: currentColor;
+    transition: background 0.22s ease, filter 0.22s ease;
+}
+
+.inventory-add-icon {
+    -webkit-mask: url("../images/add_icon.png") center / contain no-repeat;
+    mask: url("../images/add_icon.png") center / contain no-repeat;
+}
+
+.inventory-save-icon {
+    -webkit-mask: url("../images/save_icon.png") center / contain no-repeat;
+    mask: url("../images/save_icon.png") center / contain no-repeat;
+}
+
+.inventory-action-button:hover,
+.inventory-action-button:focus-visible {
+    color: #7eff00;
+    filter: drop-shadow(0 1px 0 #1f2f12);
+}
+
+.inventory-footer {
+    min-height: 130px;
+    padding-top: 80px;
 }
 
 /* Accessibility helper: keeps text available to screen readers while removing it visually. */
@@ -1413,6 +1683,31 @@ nav::after {
     padding: 0 18px;
 }
 
+.product-modal__stock {
+    min-height: 22px;
+    padding: 5px 10px 4px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    color: #9cff42;
+    background: rgba(27, 27, 27, 0.48);
+    font-size: 8pt;
+    font-weight: 500;
+    line-height: 1;
+    text-align: center;
+    text-transform: none;
+    white-space: nowrap;
+}
+
+.product-modal__stock[data-status="low"] {
+    color: #ffd36c;
+    border-color: rgba(255, 211, 108, 0.3);
+}
+
+.product-modal__stock[data-status="out"] {
+    color: #ff8d8d;
+    border-color: rgba(255, 141, 141, 0.3);
+}
+
 .product-modal__message {
     position: relative;
     display: inline-flex;
@@ -1517,12 +1812,17 @@ nav::after {
 }
 
 /* Green hover/focus state matches the More Info links on product cards. */
-.product-modal__cart:hover,
-.product-modal__cart:focus-visible {
+.product-modal__cart:hover:not(:disabled),
+.product-modal__cart:focus-visible:not(:disabled) {
     background: linear-gradient(180deg, #55c500 0%, #7eff00 100%);
     -webkit-background-clip: text;
     background-clip: text;
     filter: drop-shadow(0 1px 0 #1f2f12);
+}
+
+.product-modal__cart:disabled {
+    cursor: default;
+    opacity: 0.42;
 }
 
 /*
@@ -1602,7 +1902,13 @@ nav::after {
 
     /* Narrower side padding keeps the price and cart action aligned with the mobile cards. */
     .product-modal__actions-inner {
+        flex-wrap: wrap;
+        row-gap: 10px;
         padding: 0 8px;
+    }
+
+    .product-modal__cart {
+        margin-left: auto;
     }
 }
 
@@ -1648,6 +1954,22 @@ nav::after {
         --cart-quantity-width: 116px;
         --cart-total-width: 190px;
         --cart-grid-template: var(--cart-thumb-size) minmax(0, 1fr) var(--cart-quantity-width) var(--cart-total-width);
+    }
+
+    .inventory-table {
+        --inventory-status-width: 104px;
+        --inventory-field-width: 116px;
+        --cart-grid-template:
+            var(--cart-thumb-size)
+            minmax(0, 1fr)
+            var(--inventory-status-width)
+            var(--inventory-field-width)
+            var(--inventory-field-width);
+    }
+
+    .inventory-heading--location,
+    .inventory-heading--supplier {
+        display: none;
     }
 
     /* Remove the desktop optical offset because the tablet grid has balanced columns. */
@@ -1696,6 +2018,26 @@ nav::after {
         grid-column: 4;
         grid-row: 1;
         align-self: center;
+    }
+
+    .inventory-status {
+        grid-column: 3;
+        grid-row: 1;
+    }
+
+    .inventory-quantity-cell--stock {
+        grid-column: 4;
+        grid-row: 1;
+    }
+
+    .inventory-text-field--location {
+        grid-column: 2 / 4;
+        grid-row: 2;
+    }
+
+    .inventory-text-field--supplier {
+        grid-column: 4 / 6;
+        grid-row: 2;
     }
 
     /* Two-card grid for tablet widths. */
@@ -1778,6 +2120,21 @@ nav::after {
         --cart-grid-template: var(--cart-thumb-size) minmax(0, 1fr) var(--cart-quantity-width);
     }
 
+    .inventory-table {
+        --inventory-field-width: var(--cart-quantity-width);
+        --cart-grid-template: var(--cart-thumb-size) minmax(0, 1fr) var(--cart-quantity-width);
+    }
+
+    .inventory-heading--status,
+    .inventory-heading--location,
+    .inventory-heading--supplier {
+        display: none;
+    }
+
+    .inventory-heading--stock {
+        grid-column: 3;
+    }
+
     /* Smaller header tabs keep both mobile labels on one line. */
     .cart-heading {
         grid-row: 1;
@@ -1807,6 +2164,10 @@ nav::after {
         font-size: 6.5pt;
         line-height: 1;
         text-shadow: 0 -0.5px 0 #767676;
+    }
+
+    .inventory-heading--items::after {
+        content: "ITEM";
     }
 
     /* The price column becomes redundant on phones because price moves below the item name. */
@@ -1892,6 +2253,48 @@ nav::after {
         align-self: start;
         justify-self: start;
         font-size: 15.4px;
+    }
+
+    .inventory-row {
+        grid-template-rows: auto auto auto auto;
+        min-height: 132px;
+        row-gap: 7px;
+    }
+
+    .inventory-status {
+        grid-column: 2;
+        grid-row: 2;
+        align-self: start;
+        justify-self: start;
+        min-height: 24px;
+        padding-inline: 8px;
+        font-size: 7pt;
+    }
+
+    .inventory-quantity-cell--stock {
+        grid-column: 3;
+        grid-row: 1;
+        align-self: end;
+    }
+
+    .inventory-text-field--location {
+        grid-column: 1 / -1;
+        grid-row: 3;
+    }
+
+    .inventory-text-field--supplier {
+        grid-column: 1 / -1;
+        grid-row: 4;
+    }
+
+    .inventory-text-field input {
+        height: 34px;
+        font-size: 9pt;
+    }
+
+    .inventory-actions {
+        justify-content: space-between;
+        padding-inline: var(--cart-edge-gap);
     }
 
     /* Slightly reduced top padding brings the product grid into view sooner. */

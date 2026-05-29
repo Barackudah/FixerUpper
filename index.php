@@ -6,6 +6,10 @@ require_once __DIR__ . '/config.php';
 
 require_once __DIR__ . '/helpers.php';
 
+require_once __DIR__ . '/inventory_helpers.php';
+
+ensureInventoryTable($conn);
+
 // Decide which decorative divider variants are visible at each responsive breakpoint.
 function productDividerClasses($position)
 {
@@ -24,10 +28,18 @@ $productsById = [];
 
 // Load the main product records first; related images and specs are attached below.
 $productResult = $conn->query(
-    'SELECT id, slug, name, short_description, price, main_image
-     FROM products
-     WHERE is_active = 1
-     ORDER BY id'
+    "SELECT
+        p.id,
+        p.slug,
+        p.name,
+        p.short_description,
+        p.price,
+        p.main_image,
+        COALESCE(i.stock_quantity, 0) AS stock_quantity
+     FROM products p
+     LEFT JOIN product_inventory i ON i.product_id = p.id
+     WHERE p.is_active = 1
+     ORDER BY p.id"
 );
 
 while ($product = $productResult->fetch_assoc()) {
@@ -97,6 +109,7 @@ foreach ($products as $product) {
     }
 
     $details = [];
+    $stockQuantity = (int) $product['stock_quantity'];
 
     // Convert database spec rows into the compact [label, value] shape used by JS.
     foreach ($product['specs'] as $spec) {
@@ -112,6 +125,9 @@ foreach ($products as $product) {
         'image' => $product['main_image'],
         'images' => $images,
         'details' => $details,
+        'stockQuantity' => $stockQuantity,
+        'stockStatus' => inventoryStatus($stockQuantity),
+        'stockText' => inventoryStockText($stockQuantity),
     ];
 }
 ?>
@@ -149,6 +165,7 @@ foreach ($products as $product) {
         <div class="nav-menu">
             <a href="#home">HOME</a>
             <a href="#about">ABOUT US</a>
+            <a href="inventory.php">INVENTORY</a>
             <a href="#contacts">CONTACTS</a>
         </div>
 
@@ -199,6 +216,13 @@ foreach ($products as $product) {
                     <p class="product-description">
                         <?= e($product['short_description']); ?>
                     </p>
+                    <?php
+                        $stockQuantity = (int) $product['stock_quantity'];
+                        $stockStatus = inventoryStatus($stockQuantity);
+                    ?>
+                    <div class="product-stock product-stock--<?= e($stockStatus); ?>">
+                        <?= e(inventoryStockText($stockQuantity)); ?>
+                    </div>
                     <div class="product-footer">
                         <span class="product-price"><?= productPrice($product['price']); ?></span>
                         <a class="product-more-info" href="#<?= e($product['slug']); ?>" data-product-id="<?= e($product['slug']); ?>">More Info</a>
@@ -335,6 +359,7 @@ foreach ($products as $product) {
             <div class="product-modal__actions">
                 <div class="product-modal__actions-inner">
                     <span id="modal-product-price" class="product-modal__price"></span>
+                    <span id="modal-product-stock" class="product-modal__stock"></span>
                     <button class="product-modal__cart" type="button">Add to Cart</button>
                 </div>
                 <span id="modal-cart-message" class="product-modal__message" role="status" aria-live="polite"></span>

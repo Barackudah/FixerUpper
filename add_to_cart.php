@@ -7,6 +7,10 @@ require_once __DIR__ . '/config.php';
 // Shared cart-count helper keeps JSON badge values consistent with the rendered pages.
 require_once __DIR__ . '/helpers.php';
 
+require_once __DIR__ . '/inventory_helpers.php';
+
+ensureInventoryTable($conn);
+
 header('Content-Type: application/json; charset=utf-8');
 
 // This endpoint only changes cart state through AJAX POST requests.
@@ -39,7 +43,16 @@ if ($productId === '' || $quantity < 1) {
 
 // Accept both the numeric database id and the old product slug used by the modal links.
 $numericProductId = ctype_digit($productId) ? (int) $productId : 0;
-$stmt = $conn->prepare('SELECT id, slug FROM products WHERE is_active = 1 AND (id = ? OR slug = ?) LIMIT 1');
+$stmt = $conn->prepare(
+    'SELECT
+        p.id,
+        p.slug,
+        COALESCE(i.stock_quantity, 0) AS stock_quantity
+     FROM products p
+     LEFT JOIN product_inventory i ON i.product_id = p.id
+     WHERE p.is_active = 1 AND (p.id = ? OR p.slug = ?)
+     LIMIT 1'
+);
 $stmt->bind_param('is', $numericProductId, $productId);
 $stmt->execute();
 $product = $stmt->get_result()->fetch_assoc();
@@ -62,6 +75,7 @@ if (!isset($_SESSION['cart'])) {
 
 // Store cart quantities by real product id so checkout can join to products directly.
 $cartProductId = (int) $product['id'];
+$availableStock = (int) $product['stock_quantity'];
 
 if (isset($_SESSION['cart'][$cartProductId]) && (int) $_SESSION['cart'][$cartProductId] > 0) {
     http_response_code(409);
@@ -70,6 +84,17 @@ if (isset($_SESSION['cart'][$cartProductId]) && (int) $_SESSION['cart'][$cartPro
         'duplicate' => true,
         'message' => 'This product is already in the cart.',
         'cart_count' => cartCount(),
+    ]);
+    exit;
+}
+
+if ($availableStock < $quantity) {
+    http_response_code(409);
+    echo json_encode([
+        'success' => false,
+        'message' => $availableStock > 0 ? 'Only ' . $availableStock . ' left in stock.' : 'This product is out of stock.',
+        'cart_count' => cartCount(),
+        'stock_quantity' => $availableStock,
     ]);
     exit;
 }

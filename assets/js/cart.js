@@ -2,7 +2,9 @@
     // Cart page controller: keeps quantity buttons, remove confirmation and totals in sync.
     const table = document.querySelector("[data-cart-table]");
     const cartBadge = document.querySelector(".cart-badge");
+    const cartMessage = document.querySelector("[data-cart-message]");
     const endpoint = window.fixerupperUpdateCartEndpoint || "update_cart.php";
+    let cartMessageTimer = 0;
 
     // If the cart is empty, the table is not rendered and there is nothing to bind.
     if (!table) {
@@ -32,6 +34,31 @@
         }
 
         quantityTarget.dataset.previousQuantity = String(normalizedQuantity);
+    }
+
+    function getAvailableStock(row) {
+        const availableStock = Number.parseInt(row.dataset.stockAvailable, 10);
+
+        return Number.isFinite(availableStock) ? availableStock : 99;
+    }
+
+    function showCartMessage(message, tone) {
+        if (!cartMessage) {
+            return;
+        }
+
+        window.clearTimeout(cartMessageTimer);
+        cartMessage.textContent = message || "";
+        cartMessage.dataset.tone = tone || "";
+        cartMessage.classList.toggle("is-visible", Boolean(message));
+
+        if (message) {
+            cartMessageTimer = window.setTimeout(() => {
+                cartMessage.textContent = "";
+                cartMessage.dataset.tone = "";
+                cartMessage.classList.remove("is-visible");
+            }, 3600);
+        }
     }
 
     table.querySelectorAll("[data-cart-quantity]").forEach((quantityTarget) => {
@@ -123,6 +150,10 @@
             lineTotalTarget.innerHTML = result.formatted_line_total;
         }
 
+        if (Number.isFinite(Number(result.stock_quantity))) {
+            row.dataset.stockAvailable = String(result.stock_quantity);
+        }
+
         setPendingRemove(row, false);
         refreshDecreaseState(row, quantity);
     }
@@ -178,6 +209,13 @@
             return;
         }
 
+        if (nextQuantity > getAvailableStock(row)) {
+            setQuantityValue(quantityTarget, previousQuantity);
+            refreshDecreaseState(row, previousQuantity);
+            showCartMessage(`Only ${getAvailableStock(row)} available.`, "error");
+            return;
+        }
+
         setRowBusy(row, true);
 
         try {
@@ -185,8 +223,10 @@
 
             renderRowTotals(row, result);
             updateCartBadge(result.cart_count);
+            showCartMessage("", "");
         } catch (error) {
             console.error(error);
+            showCartMessage(error.message || "Unable to update cart.", "error");
             setQuantityValue(quantityTarget, previousQuantity);
             refreshDecreaseState(row, previousQuantity);
         } finally {
@@ -308,6 +348,7 @@
                 }
             } catch (error) {
                 console.error(error);
+                showCartMessage(error.message || "Unable to remove cart item.", "error");
                 setRowBusy(row, false);
             }
 
@@ -344,6 +385,12 @@
             return;
         }
 
+        if (nextQuantity > getAvailableStock(row)) {
+            refreshDecreaseState(row, currentQuantity);
+            showCartMessage(`Only ${getAvailableStock(row)} available.`, "error");
+            return;
+        }
+
         setRowBusy(row, true);
 
         try {
@@ -352,9 +399,11 @@
 
             renderRowTotals(row, result);
             updateCartBadge(result.cart_count);
+            showCartMessage("", "");
         } catch (error) {
             // Keep the previous quantity visible if the server rejects or the request fails.
             console.error(error);
+            showCartMessage(error.message || "Unable to update cart.", "error");
             setQuantityValue(quantityTarget, currentQuantity);
             refreshDecreaseState(row, currentQuantity);
         } finally {
