@@ -18,7 +18,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
     echo json_encode([
         'success' => false,
-        'message' => 'Only POST requests are allowed.',
+        'message' => 'only post requests are allowed.',
         'cart_count' => cartCount(),
     ]);
     exit;
@@ -35,7 +35,7 @@ if ($productId === '' || $quantity < 1) {
     http_response_code(400);
     echo json_encode([
         'success' => false,
-        'message' => 'Invalid cart item.',
+        'message' => 'invalid cart item.',
         'cart_count' => cartCount(),
     ]);
     exit;
@@ -62,7 +62,7 @@ if (!$product) {
     http_response_code(404);
     echo json_encode([
         'success' => false,
-        'message' => 'Product not found.',
+        'message' => 'product not found.',
         'cart_count' => cartCount(),
     ]);
     exit;
@@ -82,7 +82,7 @@ if (isset($_SESSION['cart'][$cartProductId]) && (int) $_SESSION['cart'][$cartPro
     echo json_encode([
         'success' => false,
         'duplicate' => true,
-        'message' => 'This product is already in the cart.',
+        'message' => 'this product is already in the cart.',
         'cart_count' => cartCount(),
     ]);
     exit;
@@ -92,7 +92,7 @@ if ($availableStock < $quantity) {
     http_response_code(409);
     echo json_encode([
         'success' => false,
-        'message' => $availableStock > 0 ? 'Only ' . $availableStock . ' left in stock.' : 'This product is out of stock.',
+        'message' => $availableStock > 0 ? 'only ' . $availableStock . ' left in stock.' : 'this product is out of stock.',
         'cart_count' => cartCount(),
         'stock_quantity' => $availableStock,
     ]);
@@ -105,6 +105,6 @@ $_SESSION['cart'][$cartProductId] = $quantity;
 // Return the updated unique-product count so the navigation badge can refresh instantly.
 echo json_encode([
     'success' => true,
-    'message' => 'Added to cart.',
+    'message' => 'added to cart.',
     'cart_count' => cartCount(),
 ]);

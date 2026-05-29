@@ -20,7 +20,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
     echo json_encode([
         'success' => false,
-        'message' => 'Only POST requests are allowed.',
+        'message' => 'only post requests are allowed.',
         'cart_count' => cartCount(),
     ]);
     exit;
@@ -40,7 +40,7 @@ if ($productId < 1 || ($action !== 'remove' && $quantity < 1)) {
     http_response_code(400);
     echo json_encode([
         'success' => false,
-        'message' => 'Invalid cart item.',
+        'message' => 'invalid cart item.',
         'cart_count' => cartCount(),
     ]);
     exit;
@@ -81,7 +81,7 @@ if (!$product) {
     http_response_code(404);
     echo json_encode([
         'success' => false,
-        'message' => 'Product not found.',
+        'message' => 'product not found.',
         'cart_count' => cartCount(),
     ]);
     exit;
@@ -92,7 +92,7 @@ if (!isset($_SESSION['cart'][$productId]) || (int) $_SESSION['cart'][$productId]
     http_response_code(404);
     echo json_encode([
         'success' => false,
-        'message' => 'Cart item not found.',
+        'message' => 'cart item not found.',
         'cart_count' => cartCount(),
     ]);
     exit;
@@ -107,7 +107,7 @@ if ($quantity > $availableStock) {
     http_response_code(409);
     echo json_encode([
         'success' => false,
-        'message' => $availableStock > 0 ? 'Only ' . $availableStock . ' available.' : 'This product is out of stock.',
+        'message' => $availableStock > 0 ? 'only ' . $availableStock . ' available.' : 'this product is out of stock.',
         'quantity' => $currentQuantity,
         'cart_count' => cartCount(),
         'stock_quantity' => $availableStock,

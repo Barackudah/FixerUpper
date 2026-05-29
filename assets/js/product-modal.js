@@ -409,7 +409,7 @@
         window.clearTimeout(cartMessageTimer);
         window.clearTimeout(cartMessageHideTimer);
         window.cancelAnimationFrame(cartMessageAnimationFrame);
-        cartMessage.textContent = message || "";
+        cartMessage.textContent = message ? String(message).toLocaleLowerCase("en-US") : "";
         cartMessage.dataset.tone = tone || "";
         cartMessage.classList.remove("is-visible", "is-hiding");
 
@@ -561,7 +561,7 @@
             && Object.prototype.hasOwnProperty.call(activeProduct, "stockQuantity")
             && (Number(activeProduct.stockQuantity) || 0) < 1
         ) {
-            showCartMessage("This product is out of stock.", "error");
+            showCartMessage("this product is out of stock.", "error");
             return;
         }
 
@@ -584,19 +584,19 @@
 
             if (result.duplicate) {
                 updateCartBadge(result.cart_count);
-                showCartMessage(result.message || "This product is already in the cart.", "warning");
+                showCartMessage(result.message || "this product is already in the cart.", "warning");
                 return;
             }
 
             if (!response.ok || !result.success) {
-                throw new Error(result.message || "Unable to add product to cart.");
+                throw new Error(result.message || "unable to add product to cart.");
             }
 
             updateCartBadge(result.cart_count);
-            showCartMessage(result.message || "Added to cart.", "success");
+            showCartMessage(result.message || "added to cart.", "success");
         } catch (error) {
             console.error(error);
-            showCartMessage(error.message || "Unable to add product to cart.", "error");
+            showCartMessage(error.message || "unable to add product to cart.", "error");
         } finally {
             updateCartAvailability(activeProduct);
         }

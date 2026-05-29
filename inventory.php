@@ -39,7 +39,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->execute();
     }
 
-    $_SESSION['inventory_notice'] = 'Inventory updated.';
+    $_SESSION['inventory_notice'] = 'inventory updated.';
     header('Location: inventory.php');
     exit;
 }
@@ -122,7 +122,7 @@ unset($_SESSION['inventory_notice']);
     <main class="container cart-container inventory-container">
         <section class="cart-page inventory-page" aria-label="Inventory">
             <?php if ($notice): ?>
-                <p class="cart-message inventory-notice is-visible" role="status"><?= e($notice); ?></p>
+                <p class="cart-message inventory-notice is-visible" data-system-message role="status"><?= e($notice); ?></p>
             <?php endif; ?>
 
             <form id="inventory-form" class="inventory-form" method="post" action="inventory.php">

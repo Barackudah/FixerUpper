@@ -1,5 +1,79 @@
 (function () {
     const table = document.querySelector("[data-inventory-table]");
+    const form = document.getElementById("inventory-form");
+    const systemMessage = document.querySelector("[data-system-message]");
+    const textInputs = [...document.querySelectorAll(".inventory-text-field input")];
+    const savedTextFieldsKey = "fixerupper.inventory.savedTextFields";
+
+    function readSavedTextFieldNames() {
+        try {
+            return JSON.parse(window.sessionStorage.getItem(savedTextFieldsKey) || "[]");
+        } catch (error) {
+            return [];
+        }
+    }
+
+    function clearSavedTextFieldNames() {
+        try {
+            window.sessionStorage.removeItem(savedTextFieldsKey);
+        } catch (error) {
+            // Ignore storage errors; the visual state still works while editing.
+        }
+    }
+
+    function storeChangedTextFieldNames() {
+        const changedFieldNames = textInputs
+            .filter((input) => input.value !== input.dataset.initialValue)
+            .map((input) => input.name);
+
+        try {
+            if (changedFieldNames.length > 0) {
+                window.sessionStorage.setItem(savedTextFieldsKey, JSON.stringify(changedFieldNames));
+            } else {
+                window.sessionStorage.removeItem(savedTextFieldsKey);
+            }
+        } catch (error) {
+            // Ignore storage errors; saving inventory should not depend on browser storage.
+        }
+    }
+
+    function refreshTextInputState(input) {
+        input.classList.toggle("is-edited", input.value !== input.dataset.initialValue);
+    }
+
+    textInputs.forEach((input) => {
+        input.dataset.initialValue = input.value;
+        input.addEventListener("input", () => refreshTextInputState(input));
+    });
+
+    if (form) {
+        form.addEventListener("submit", storeChangedTextFieldNames);
+    }
+
+    if (systemMessage) {
+        const savedTextFieldNames = readSavedTextFieldNames();
+        const settlingTextInputs = textInputs.filter((input) => savedTextFieldNames.includes(input.name));
+
+        clearSavedTextFieldNames();
+
+        systemMessage.textContent = systemMessage.textContent.toLocaleLowerCase("en-US");
+        settlingTextInputs.forEach((input) => {
+            input.classList.add("is-save-settling");
+        });
+
+        window.setTimeout(() => {
+            systemMessage.classList.add("is-hiding");
+            settlingTextInputs.forEach((input) => {
+                input.classList.remove("is-save-settling", "is-edited");
+            });
+        }, 3000);
+
+        window.setTimeout(() => {
+            systemMessage.textContent = "";
+            systemMessage.classList.remove("is-visible", "is-hiding");
+            systemMessage.hidden = true;
+        }, 3600);
+    }
 
     if (!table) {
         return;

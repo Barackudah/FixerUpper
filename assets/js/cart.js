@@ -5,6 +5,8 @@
     const cartMessage = document.querySelector("[data-cart-message]");
     const endpoint = window.fixerupperUpdateCartEndpoint || "update_cart.php";
     let cartMessageTimer = 0;
+    let cartMessageHideTimer = 0;
+    let cartMessageAnimationFrame = 0;
 
     // If the cart is empty, the table is not rendered and there is nothing to bind.
     if (!table) {
@@ -48,15 +50,25 @@
         }
 
         window.clearTimeout(cartMessageTimer);
-        cartMessage.textContent = message || "";
+        window.clearTimeout(cartMessageHideTimer);
+        window.cancelAnimationFrame(cartMessageAnimationFrame);
+        cartMessage.textContent = message ? String(message).toLocaleLowerCase("en-US") : "";
         cartMessage.dataset.tone = tone || "";
-        cartMessage.classList.toggle("is-visible", Boolean(message));
+        cartMessage.classList.remove("is-visible", "is-hiding");
 
         if (message) {
+            cartMessageAnimationFrame = window.requestAnimationFrame(() => {
+                cartMessage.classList.add("is-visible");
+            });
+
+            cartMessageHideTimer = window.setTimeout(() => {
+                cartMessage.classList.add("is-hiding");
+            }, 3000);
+
             cartMessageTimer = window.setTimeout(() => {
                 cartMessage.textContent = "";
                 cartMessage.dataset.tone = "";
-                cartMessage.classList.remove("is-visible");
+                cartMessage.classList.remove("is-visible", "is-hiding");
             }, 3600);
         }
     }
@@ -130,7 +142,7 @@
 
         const emptyMessage = document.createElement("p");
         emptyMessage.className = "cart-empty";
-        emptyMessage.textContent = "Your cart is empty.";
+        emptyMessage.textContent = "your cart is empty.";
         cartPage.append(emptyMessage);
         document.body.classList.remove("cart-body--filled");
         document.body.classList.add("cart-body--empty");
@@ -173,7 +185,7 @@
         const result = await response.json();
 
         if (!response.ok || !result.success) {
-            throw new Error(result.message || "Unable to update cart.");
+            throw new Error(result.message || "unable to update cart.");
         }
 
         return result;
@@ -212,7 +224,7 @@
         if (nextQuantity > getAvailableStock(row)) {
             setQuantityValue(quantityTarget, previousQuantity);
             refreshDecreaseState(row, previousQuantity);
-            showCartMessage(`Only ${getAvailableStock(row)} available.`, "error");
+            showCartMessage(`only ${getAvailableStock(row)} available.`, "error");
             return;
         }
 
@@ -226,7 +238,7 @@
             showCartMessage("", "");
         } catch (error) {
             console.error(error);
-            showCartMessage(error.message || "Unable to update cart.", "error");
+            showCartMessage(error.message || "unable to update cart.", "error");
             setQuantityValue(quantityTarget, previousQuantity);
             refreshDecreaseState(row, previousQuantity);
         } finally {
@@ -336,7 +348,7 @@
                 const result = await response.json();
 
                 if (!response.ok || !result.success) {
-                    throw new Error(result.message || "Unable to remove cart item.");
+                    throw new Error(result.message || "unable to remove cart item.");
                 }
 
                 row.remove();
@@ -348,7 +360,7 @@
                 }
             } catch (error) {
                 console.error(error);
-                showCartMessage(error.message || "Unable to remove cart item.", "error");
+                showCartMessage(error.message || "unable to remove cart item.", "error");
                 setRowBusy(row, false);
             }
 
@@ -387,7 +399,7 @@
 
         if (nextQuantity > getAvailableStock(row)) {
             refreshDecreaseState(row, currentQuantity);
-            showCartMessage(`Only ${getAvailableStock(row)} available.`, "error");
+            showCartMessage(`only ${getAvailableStock(row)} available.`, "error");
             return;
         }
 
@@ -403,7 +415,7 @@
         } catch (error) {
             // Keep the previous quantity visible if the server rejects or the request fails.
             console.error(error);
-            showCartMessage(error.message || "Unable to update cart.", "error");
+            showCartMessage(error.message || "unable to update cart.", "error");
             setQuantityValue(quantityTarget, currentQuantity);
             refreshDecreaseState(row, currentQuantity);
         } finally {

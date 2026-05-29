@@ -134,7 +134,7 @@ $updateCartEndpoint = ($basePath === '' ? '' : $basePath) . '/update_cart.php';
             <p class="cart-message" data-cart-message role="status" aria-live="polite"></p>
             <?php if (!$cartItems): ?>
                 <!-- Empty-state fallback shown by PHP and recreated by JavaScript after final removal. -->
-                <p class="cart-empty">Your cart is empty.</p>
+                <p class="cart-empty">your cart is empty.</p>
             <?php else: ?>
                 <!-- JavaScript listens on this table wrapper for delegated quantity and remove events. -->
                 <div class="cart-table" data-cart-table>
