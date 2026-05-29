@@ -159,10 +159,16 @@
     let cartMessageHideTimer = 0;
     let cartMessageAnimationFrame = 0;
     let slideAnimationTimer = 0;
+    let modalCloseResetTimer = 0;
     let imageSwipeStartX = 0;
     let imageSwipeStartY = 0;
     let isTrackingImageSwipe = false;
     let isImageSwipeIntent = false;
+    let cartButtonLabelAnimationTimer = 0;
+    let cartButtonLabelSettleTimer = 0;
+    const cartButtonLabelSlideDuration = 420;
+    const cartButtonLabelColorFadeDuration = 700;
+    const modalCloseResetDelay = 320;
 
     /*
      * Checks whether an element can still scroll in the requested direction.
@@ -386,11 +392,117 @@
         cartBadge.textContent = cartCount > 0 ? cartCount : "";
     }
 
-    function updateCartAvailability(product) {
+    function ensureCartButtonLabel() {
+        if (!cartButton) {
+            return null;
+        }
+
+        let viewport = cartButton.querySelector(".product-modal__cart-label-viewport");
+        let label = cartButton.querySelector(".product-modal__cart-label--current");
+
+        if (!viewport || !label) {
+            const initialText = cartButton.textContent.trim() || "Add to Cart";
+
+            cartButton.textContent = "";
+            viewport = document.createElement("span");
+            viewport.className = "product-modal__cart-label-viewport";
+
+            label = document.createElement("span");
+            label.className = "product-modal__cart-label product-modal__cart-label--current";
+            label.textContent = initialText;
+            label.dataset.label = initialText;
+
+            viewport.append(label);
+            cartButton.append(viewport);
+        }
+
+        return { viewport, label };
+    }
+
+    function setCartButtonLabel(nextText, shouldAnimate) {
+        const labelParts = ensureCartButtonLabel();
+
+        if (!labelParts) {
+            return;
+        }
+
+        const { viewport, label } = labelParts;
+        const normalizedText = nextText || "Add to Cart";
+
+        if (label.textContent === normalizedText) {
+            return;
+        }
+
+        window.clearTimeout(cartButtonLabelAnimationTimer);
+        window.clearTimeout(cartButtonLabelSettleTimer);
+        viewport.querySelectorAll(".product-modal__cart-label--leaving").forEach((leavingLabel) => {
+            leavingLabel.remove();
+        });
+        label.classList.remove(
+            "product-modal__cart-label--entering",
+            "product-modal__cart-label--fresh",
+            "product-modal__cart-label--settling"
+        );
+
+        if (!shouldAnimate) {
+            label.textContent = normalizedText;
+            label.dataset.label = normalizedText;
+            return;
+        }
+
+        const leavingLabel = label.cloneNode(true);
+        leavingLabel.className = "product-modal__cart-label product-modal__cart-label--leaving";
+        leavingLabel.addEventListener("animationend", () => {
+            leavingLabel.remove();
+        }, { once: true });
+        viewport.append(leavingLabel);
+
+        label.textContent = normalizedText;
+        label.dataset.label = normalizedText;
+        label.classList.add("product-modal__cart-label--entering", "product-modal__cart-label--fresh");
+
+        let hasSettled = false;
+        const settleCartButtonLabel = () => {
+            if (hasSettled) {
+                return;
+            }
+
+            hasSettled = true;
+            label.classList.remove("product-modal__cart-label--entering");
+            label.classList.add("product-modal__cart-label--settling");
+        };
+        const handleCartButtonLabelEnterEnd = (event) => {
+            if (event.animationName !== "productModalCartLabelEnterRight") {
+                return;
+            }
+
+            window.clearTimeout(cartButtonLabelSettleTimer);
+            settleCartButtonLabel();
+            label.removeEventListener("animationend", handleCartButtonLabelEnterEnd);
+        };
+
+        label.addEventListener("animationend", handleCartButtonLabelEnterEnd);
+        cartButtonLabelSettleTimer = window.setTimeout(settleCartButtonLabel, cartButtonLabelSlideDuration + 60);
+
+        cartButtonLabelAnimationTimer = window.setTimeout(() => {
+            label.removeEventListener("animationend", handleCartButtonLabelEnterEnd);
+            label.classList.remove(
+                "product-modal__cart-label--entering",
+                "product-modal__cart-label--fresh",
+                "product-modal__cart-label--settling"
+            );
+            viewport.querySelectorAll(".product-modal__cart-label--leaving").forEach((leavingLabel) => {
+                leavingLabel.remove();
+            });
+        }, cartButtonLabelSlideDuration + cartButtonLabelColorFadeDuration + 120);
+    }
+
+    function updateCartAvailability(product, options) {
         if (!product) {
             if (cartButton) {
                 cartButton.disabled = false;
-                cartButton.textContent = "Add to Cart";
+                cartButton.dataset.cartState = "default";
+                setCartButtonLabel("Add to Cart", false);
             }
 
             return;
@@ -399,10 +511,27 @@
         const hasStockQuantity = Object.prototype.hasOwnProperty.call(product, "stockQuantity");
         const stockQuantity = hasStockQuantity ? Number(product.stockQuantity) || 0 : 1;
         const isOutOfStock = hasStockQuantity && stockQuantity < 1;
+        const isInCart = Boolean(product.inCart);
 
         if (cartButton) {
-            cartButton.disabled = isOutOfStock;
-            cartButton.textContent = "Add to Cart";
+            cartButton.disabled = isOutOfStock || isInCart;
+            cartButton.dataset.cartState = isInCart ? "added" : (isOutOfStock ? "unavailable" : "default");
+            setCartButtonLabel(isInCart ? "added to cart" : "Add to Cart", Boolean(options && options.animate));
+        }
+    }
+
+    function resetModalAfterClose() {
+        if (modal.classList.contains("is-open")) {
+            return;
+        }
+
+        modalCopy.classList.remove("has-scroll");
+        activeProduct = null;
+        activeProductId = null;
+        updateCartAvailability(null);
+
+        if (cartButton) {
+            delete cartButton.dataset.productId;
         }
     }
 
@@ -640,6 +769,7 @@
             return;
         }
 
+        window.clearTimeout(modalCloseResetTimer);
         activeProduct = product;
         activeProductId = product.id || productId;
         activeSlide = 0;
@@ -674,17 +804,11 @@
      */
     function closeModal() {
         unlockPageScroll();
+        window.clearTimeout(modalCloseResetTimer);
         modal.classList.remove("is-open");
         modal.setAttribute("aria-hidden", "true");
-        modalCopy.classList.remove("has-scroll");
-        activeProduct = null;
-        activeProductId = null;
         showCartMessage("", "");
-        updateCartAvailability(null);
-
-        if (cartButton) {
-            delete cartButton.dataset.productId;
-        }
+        modalCloseResetTimer = window.setTimeout(resetModalAfterClose, modalCloseResetDelay);
 
         if (lastFocusedElement) {
             lastFocusedElement.focus();
@@ -702,6 +826,11 @@
             return;
         }
 
+        if (activeProduct && activeProduct.inCart) {
+            updateCartAvailability(activeProduct);
+            return;
+        }
+
         if (
             activeProduct
             && Object.prototype.hasOwnProperty.call(activeProduct, "stockQuantity")
@@ -711,6 +840,7 @@
             return;
         }
 
+        cartButton.dataset.cartState = "pending";
         cartButton.disabled = true;
 
         try {
@@ -729,8 +859,13 @@
             const result = await response.json();
 
             if (result.duplicate) {
+                if (activeProduct) {
+                    activeProduct.inCart = true;
+                }
+
                 updateCartBadge(result.cart_count);
-                showCartMessage(result.message || "this product is already in the cart.", "warning");
+                updateCartAvailability(activeProduct, { animate: true });
+                showCartMessage("", "");
                 return;
             }
 
@@ -739,7 +874,12 @@
             }
 
             updateCartBadge(result.cart_count);
-            showCartMessage(result.message || "added to cart.", "success");
+            if (activeProduct) {
+                activeProduct.inCart = true;
+            }
+
+            updateCartAvailability(activeProduct, { animate: true });
+            showCartMessage("", "");
         } catch (error) {
             console.error(error);
             showCartMessage(error.message || "unable to add product to cart.", "error");

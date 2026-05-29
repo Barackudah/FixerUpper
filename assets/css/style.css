@@ -407,16 +407,35 @@ nav::after {
 }
 
 .product-more-info {
+    position: relative;
+    display: inline-block;
     text-decoration: none;
-    transition: background 0.22s ease, filter 0.22s ease;
+    transition: filter 0.22s ease;
 }
 
-/* On hover, the link turns green to show the user that it is an active action. */
-.product-more-info:hover {
+.product-more-info::after {
+    content: attr(data-label);
+    position: absolute;
+    inset: 0;
+    display: block;
+    color: transparent;
     background: linear-gradient(180deg, #55c500 0%, #7eff00 100%);
     -webkit-background-clip: text;
     background-clip: text;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.22s ease;
+}
+
+/* On hover, the link turns green to show the user that it is an active action. */
+.product-more-info:hover,
+.product-more-info:focus-visible {
     filter: drop-shadow(0 1px 0 #1f2f12);
+}
+
+.product-more-info:hover::after,
+.product-more-info:focus-visible::after {
+    opacity: 1;
 }
 
 /* Decorative dotted line between product rows and the advertising block. */
@@ -1900,6 +1919,8 @@ nav::after {
 @media (prefers-reduced-motion: reduce) {
     .product-modal__image--entering,
     .product-modal__image--leaving,
+    .product-modal__cart-label--entering,
+    .product-modal__cart-label--leaving,
     .cart-message.is-visible,
     .cart-message.is-visible.is-hiding,
     .product-modal__message.is-visible,
@@ -1926,25 +1947,177 @@ nav::after {
 
 /* Button reset for the cart action while keeping the decorative text styling above. */
 .product-modal__cart {
+    --modal-cart-green-top: #3f9700;
+    --modal-cart-green-bottom: #65d600;
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     justify-self: end;
+    min-width: 118px;
+    min-height: 22px;
     padding: 0;
     border: 0;
+    overflow: hidden;
     cursor: pointer;
-    transition: background 0.22s ease, filter 0.22s ease;
+    background: none;
+    -webkit-background-clip: initial;
+    background-clip: initial;
+    transition: filter 0.22s ease;
+}
+
+.product-modal__cart-label-viewport {
+    --modal-cart-slide-duration: 0.42s;
+    --modal-cart-color-fade-duration: 0.7s;
+    position: relative;
+    display: grid;
+    align-items: center;
+    justify-items: center;
+    width: 100%;
+    min-height: 1em;
+    overflow: hidden;
+}
+
+.product-modal__cart-label {
+    position: relative;
+    grid-area: 1 / 1;
+    display: block;
+    width: 100%;
+    text-align: center;
+    color: transparent;
+    background: linear-gradient(180deg, #a4a4a4 0%, #d6d6d6 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    white-space: nowrap;
+    will-change: transform;
+}
+
+.product-modal__cart-label::after {
+    content: attr(data-label);
+    position: absolute;
+    inset: 0;
+    display: block;
+    width: 100%;
+    text-align: center;
+    color: transparent;
+    background: linear-gradient(180deg, var(--modal-cart-green-top) 0%, var(--modal-cart-green-bottom) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.22s ease;
+}
+
+.product-modal__cart-label--current {
+    position: relative;
+    z-index: 2;
+}
+
+.product-modal__cart[data-cart-state="added"] .product-modal__cart-label--current {
+    background: linear-gradient(180deg, #434343 0%, #606060 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+}
+
+.product-modal__cart[data-cart-state="pending"] .product-modal__cart-label--current,
+.product-modal__cart[data-cart-state="added"] .product-modal__cart-label--current.product-modal__cart-label--fresh:not(.product-modal__cart-label--settling) {
+    background: linear-gradient(180deg, var(--modal-cart-green-top) 0%, var(--modal-cart-green-bottom) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+}
+
+.product-modal__cart-label--fresh::after {
+    opacity: 1;
+    transition: none;
+}
+
+.product-modal__cart-label--fresh.product-modal__cart-label--settling::after {
+    animation: productModalCartLabelFreshFade var(--modal-cart-color-fade-duration) ease both;
+}
+
+.product-modal__cart-label--leaving::after {
+    opacity: 1;
+    transition: none;
+}
+
+.product-modal__cart-label--leaving {
+    background: linear-gradient(180deg, var(--modal-cart-green-top) 0%, var(--modal-cart-green-bottom) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+}
+
+.product-modal__cart-label--entering {
+    animation: productModalCartLabelEnterRight var(--modal-cart-slide-duration) cubic-bezier(0.34, 0.78, 0.28, 1) both;
+}
+
+.product-modal__cart-label--leaving {
+    position: relative;
+    z-index: 1;
+    pointer-events: none;
+    animation: productModalCartLabelExitLeft var(--modal-cart-slide-duration) cubic-bezier(0.34, 0.78, 0.28, 1) both;
+}
+
+@keyframes productModalCartLabelEnterRight {
+    0% {
+        transform: translateX(100%);
+    }
+
+    100% {
+        transform: translateX(0);
+    }
+}
+
+@keyframes productModalCartLabelExitLeft {
+    0% {
+        transform: translateX(0);
+    }
+
+    100% {
+        transform: translateX(-100%);
+    }
+}
+
+@keyframes productModalCartLabelFreshFade {
+    0% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .product-modal__cart-label-viewport {
+        --modal-cart-slide-duration: 0.01ms;
+        --modal-cart-color-fade-duration: 0.01ms;
+    }
 }
 
 /* Green hover/focus state matches the More Info links on product cards. */
+.product-modal__cart:hover:not(:disabled) .product-modal__cart-label--current,
+.product-modal__cart:focus-visible:not(:disabled) .product-modal__cart-label--current {
+    z-index: 2;
+}
+
+.product-modal__cart:hover:not(:disabled) .product-modal__cart-label--current::after,
+.product-modal__cart:focus-visible:not(:disabled) .product-modal__cart-label--current::after {
+    opacity: 1;
+}
+
 .product-modal__cart:hover:not(:disabled),
 .product-modal__cart:focus-visible:not(:disabled) {
-    background: linear-gradient(180deg, #55c500 0%, #7eff00 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
     filter: drop-shadow(0 1px 0 #1f2f12);
 }
 
 .product-modal__cart:disabled {
     cursor: default;
     opacity: 0.42;
+}
+
+.product-modal__cart[data-cart-state="pending"]:disabled,
+.product-modal__cart[data-cart-state="added"]:disabled {
+    opacity: 1;
 }
 
 /*

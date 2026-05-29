@@ -85,6 +85,13 @@ $modalProducts = [];
 
 // The navigation badge shows unique products and stays empty when the cart has no items.
 $cartCount = cartBadgeCount($_SESSION['cart'] ?? []);
+$cartProductIds = [];
+
+foreach ($_SESSION['cart'] ?? [] as $productId => $quantity) {
+    if ((int) $quantity > 0) {
+        $cartProductIds[(int) $productId] = true;
+    }
+}
 
 // Build a site-relative endpoint so AJAX still works from a subdirectory install.
 $basePath = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'])), '/');
@@ -92,6 +99,7 @@ $cartEndpoint = ($basePath === '' ? '' : $basePath) . '/add_to_cart.php';
 
 foreach ($products as $product) {
     $images = [];
+    $productId = (int) $product['id'];
 
     // Prefer gallery images when they exist, otherwise fall back to the main product image.
     foreach ($product['images'] as $image) {
@@ -118,7 +126,7 @@ foreach ($products as $product) {
 
     // Expose only the fields the modal needs instead of sending raw database rows.
     $modalProducts[$product['slug']] = [
-        'id' => (int) $product['id'],
+        'id' => $productId,
         'slug' => $product['slug'],
         'title' => $product['name'],
         'price' => productPrice($product['price']),
@@ -126,6 +134,7 @@ foreach ($products as $product) {
         'images' => $images,
         'details' => $details,
         'stockQuantity' => $stockQuantity,
+        'inCart' => isset($cartProductIds[$productId]),
     ];
 }
 ?>
@@ -223,7 +232,7 @@ foreach ($products as $product) {
                     </div>
                     <div class="product-footer">
                         <span class="product-price"><?= productPrice($product['price']); ?></span>
-                        <a class="product-more-info" href="#<?= e($product['slug']); ?>" data-product-id="<?= e($product['slug']); ?>">More Info</a>
+                        <a class="product-more-info" href="#<?= e($product['slug']); ?>" data-product-id="<?= e($product['slug']); ?>" data-label="More Info">More Info</a>
                     </div>
                 </article>
 
