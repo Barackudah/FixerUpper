@@ -1683,31 +1683,6 @@ nav::after {
     padding: 0 18px;
 }
 
-.product-modal__stock {
-    min-height: 22px;
-    padding: 5px 10px 4px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 8px;
-    color: #9cff42;
-    background: rgba(27, 27, 27, 0.48);
-    font-size: 8pt;
-    font-weight: 500;
-    line-height: 1;
-    text-align: center;
-    text-transform: none;
-    white-space: nowrap;
-}
-
-.product-modal__stock[data-status="low"] {
-    color: #ffd36c;
-    border-color: rgba(255, 211, 108, 0.3);
-}
-
-.product-modal__stock[data-status="out"] {
-    color: #ff8d8d;
-    border-color: rgba(255, 141, 141, 0.3);
-}
-
 .product-modal__message {
     position: relative;
     display: inline-flex;

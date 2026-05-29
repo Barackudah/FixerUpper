@@ -127,7 +127,6 @@
     const modalDots = document.getElementById("modal-product-dots");
     const modalText = document.getElementById("modal-product-text");
     const modalPrice = document.getElementById("modal-product-price");
-    const modalStock = document.getElementById("modal-product-stock");
     const modalCopy = modal.querySelector(".product-modal__copy");
     const modalScrollbar = modal.querySelector(".product-modal__scrollbar");
     const modalScrollbarThumb = modal.querySelector(".product-modal__scrollbar-thumb");
@@ -378,13 +377,8 @@
         cartBadge.textContent = cartCount > 0 ? cartCount : "";
     }
 
-    function updateModalStock(product) {
+    function updateCartAvailability(product) {
         if (!product) {
-            if (modalStock) {
-                modalStock.textContent = "";
-                modalStock.dataset.status = "";
-            }
-
             if (cartButton) {
                 cartButton.disabled = false;
                 cartButton.textContent = "Add to Cart";
@@ -395,18 +389,11 @@
 
         const hasStockQuantity = Object.prototype.hasOwnProperty.call(product, "stockQuantity");
         const stockQuantity = hasStockQuantity ? Number(product.stockQuantity) || 0 : 1;
-        const stockStatus = product.stockStatus || (stockQuantity > 0 ? "in" : "out");
-
-        if (modalStock) {
-            modalStock.textContent = product.stockText || (hasStockQuantity
-                ? (stockQuantity > 0 ? `${stockQuantity} in stock` : "out of stock")
-                : "in stock");
-            modalStock.dataset.status = stockStatus;
-        }
+        const isOutOfStock = hasStockQuantity && stockQuantity < 1;
 
         if (cartButton) {
-            cartButton.disabled = stockStatus === "out";
-            cartButton.textContent = stockStatus === "out" ? "Out of Stock" : "Add to Cart";
+            cartButton.disabled = isOutOfStock;
+            cartButton.textContent = "Add to Cart";
         }
     }
 
@@ -519,7 +506,7 @@
 
         modalTitle.textContent = product.title;
         modalPrice.innerHTML = product.price;
-        updateModalStock(product);
+        updateCartAvailability(product);
         renderDetails(product);
         renderDots(getSlides(product));
         setSlide(0);
@@ -547,7 +534,7 @@
         activeProduct = null;
         activeProductId = null;
         showCartMessage("", "");
-        updateModalStock(null);
+        updateCartAvailability(null);
 
         if (cartButton) {
             delete cartButton.dataset.productId;
@@ -611,7 +598,7 @@
             console.error(error);
             showCartMessage(error.message || "Unable to add product to cart.", "error");
         } finally {
-            updateModalStock(activeProduct);
+            updateCartAvailability(activeProduct);
         }
     }
 

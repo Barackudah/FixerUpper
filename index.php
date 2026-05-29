@@ -126,8 +126,6 @@ foreach ($products as $product) {
         'images' => $images,
         'details' => $details,
         'stockQuantity' => $stockQuantity,
-        'stockStatus' => inventoryStatus($stockQuantity),
-        'stockText' => inventoryStockText($stockQuantity),
     ];
 }
 ?>
@@ -359,7 +357,6 @@ foreach ($products as $product) {
             <div class="product-modal__actions">
                 <div class="product-modal__actions-inner">
                     <span id="modal-product-price" class="product-modal__price"></span>
-                    <span id="modal-product-stock" class="product-modal__stock"></span>
                     <button class="product-modal__cart" type="button">Add to Cart</button>
                 </div>
                 <span id="modal-cart-message" class="product-modal__message" role="status" aria-live="polite"></span>
