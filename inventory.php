@@ -183,11 +183,11 @@ unset($_SESSION['inventory_notice']);
                 <div class="inventory-actions">
                     <button class="inventory-action-button inventory-add" type="button">
                         <span class="inventory-action-icon inventory-add-icon" aria-hidden="true"></span>
-                        <span>ADD ITEM</span>
+                        <span>add item</span>
                     </button>
                     <button class="inventory-action-button inventory-save" type="submit">
                         <span class="inventory-action-icon inventory-save-icon" aria-hidden="true"></span>
-                        <span>SAVE INVENTORY</span>
+                        <span>save inventory</span>
                     </button>
                 </div>
             </form>
