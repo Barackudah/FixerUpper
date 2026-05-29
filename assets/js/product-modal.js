@@ -159,6 +159,9 @@
     let cartMessageHideTimer = 0;
     let cartMessageAnimationFrame = 0;
     let slideAnimationTimer = 0;
+    let slideAnimationToken = 0;
+    let visibleSlide = 0;
+    let isSlideAnimating = false;
     let modalCloseResetTimer = 0;
     let imageSwipeStartX = 0;
     let imageSwipeStartY = 0;
@@ -586,6 +589,24 @@
     }
 
     function clearSlideAnimation() {
+        slideAnimationToken += 1;
+        window.clearTimeout(slideAnimationTimer);
+        isSlideAnimating = false;
+        modalImage.classList.remove(
+            "product-modal__image--entering",
+            "product-modal__image--entering-from-left",
+            "product-modal__image--entering-from-right"
+        );
+        modalImageStage.querySelectorAll(".product-modal__image--leaving").forEach((image) => {
+            image.remove();
+        });
+    }
+
+    function finishSlideAnimation(token) {
+        if (token !== slideAnimationToken) {
+            return;
+        }
+
         window.clearTimeout(slideAnimationTimer);
         modalImage.classList.remove(
             "product-modal__image--entering",
@@ -595,6 +616,8 @@
         modalImageStage.querySelectorAll(".product-modal__image--leaving").forEach((image) => {
             image.remove();
         });
+
+        isSlideAnimating = false;
     }
 
     function renderImageSlide(slide, shouldAnimate, direction) {
@@ -624,19 +647,54 @@
         modalBlank.hidden = true;
 
         if (canAnimate) {
+            isSlideAnimating = true;
+            slideAnimationToken += 1;
+            const currentAnimationToken = slideAnimationToken;
+
             modalImage.classList.add(
                 "product-modal__image--entering",
                 isForward ? "product-modal__image--entering-from-right" : "product-modal__image--entering-from-left"
             );
-            modalImage.addEventListener("animationend", () => {
-                modalImage.classList.remove(
-                    "product-modal__image--entering",
-                    "product-modal__image--entering-from-left",
-                    "product-modal__image--entering-from-right"
-                );
+            modalImage.addEventListener("animationend", (event) => {
+                if (event.animationName === "productModalImageEnterLeft" || event.animationName === "productModalImageEnterRight") {
+                    finishSlideAnimation(currentAnimationToken);
+                }
             }, { once: true });
 
-            slideAnimationTimer = window.setTimeout(clearSlideAnimation, 650);
+            slideAnimationTimer = window.setTimeout(() => {
+                finishSlideAnimation(currentAnimationToken);
+            }, 650);
+        }
+    }
+
+    function updateDots() {
+        [...modalDots.children].forEach((dot, dotIndex) => {
+            const isActive = dotIndex === activeSlide;
+            dot.classList.toggle("is-active", isActive);
+            dot.setAttribute("aria-current", isActive ? "true" : "false");
+        });
+    }
+
+    function showSlide(index, options) {
+        const slides = getSlides(activeProduct);
+        const slide = slides[index] || slides[0];
+        const shouldAnimate = !(options && options.animate === false) && index !== visibleSlide;
+        const direction = options && options.direction
+            ? options.direction
+            : (index < visibleSlide ? "backward" : "forward");
+
+        visibleSlide = index;
+
+        if (slide.type === "image") {
+            renderImageSlide(slide, shouldAnimate, direction);
+        } else {
+            clearSlideAnimation();
+            modalImage.hidden = true;
+            modalBlank.hidden = false;
+        }
+
+        if (!(options && options.updateDots === false)) {
+            updateDots();
         }
     }
 
@@ -652,27 +710,27 @@
             return;
         }
 
-        const previousSlide = activeSlide;
-        const shouldAnimate = !(options && options.animate === false) && index !== previousSlide;
-        const direction = options && options.direction
-            ? options.direction
-            : (index < previousSlide ? "backward" : "forward");
-        const slides = getSlides(activeProduct);
-        const slide = slides[index] || slides[0];
-        activeSlide = index;
+        const shouldForceInstantSlide = options && options.animate === false;
 
-        if (slide.type === "image") {
-            renderImageSlide(slide, shouldAnimate, direction);
-        } else {
-            clearSlideAnimation();
-            modalImage.hidden = true;
-            modalBlank.hidden = false;
+        if (isSlideAnimating && !shouldForceInstantSlide) {
+            return;
         }
 
-        [...modalDots.children].forEach((dot, dotIndex) => {
-            const isActive = dotIndex === activeSlide;
-            dot.classList.toggle("is-active", isActive);
-            dot.setAttribute("aria-current", isActive ? "true" : "false");
+        const slides = getSlides(activeProduct);
+        const normalizedIndex = slides[index] ? index : 0;
+        const previousSlide = activeSlide;
+        const shouldAnimate = !shouldForceInstantSlide && normalizedIndex !== previousSlide;
+        const direction = options && options.direction
+            ? options.direction
+            : (normalizedIndex < previousSlide ? "backward" : "forward");
+
+        activeSlide = normalizedIndex;
+        updateDots();
+
+        showSlide(normalizedIndex, {
+            animate: shouldAnimate,
+            direction,
+            updateDots: false
         });
     }
 

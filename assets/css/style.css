@@ -1722,7 +1722,7 @@ nav::after {
 
 /* The active dot grows slightly so the current slide is visible without adding text. */
 .product-modal__dot.is-active {
-    transform: scale(1.1);
+    transform: scale(1.32);
     opacity: 1;
 }
 
