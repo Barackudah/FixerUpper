@@ -1554,24 +1554,117 @@ nav::after {
 
 /* Fixed-height image stage keeps the modal from resizing when slides change. */
 .product-modal__image-stage {
+    --modal-image-edge-fade: 62px;
+    --modal-image-slide-duration: 0.42s;
     position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
     height: 310px;
     overflow: hidden;
+    -webkit-mask-image: linear-gradient(
+        90deg,
+        transparent 0,
+        #000 var(--modal-image-edge-fade),
+        #000 calc(100% - var(--modal-image-edge-fade)),
+        transparent 100%
+    );
+    mask-image: linear-gradient(
+        90deg,
+        transparent 0,
+        #000 var(--modal-image-edge-fade),
+        #000 calc(100% - var(--modal-image-edge-fade)),
+        transparent 100%
+    );
+    touch-action: pan-y;
+    user-select: none;
 }
 
 /* Product images scale down to fit the stage without cropping. */
 .product-modal__image {
+    position: relative;
+    z-index: 2;
     display: block;
     width: auto;
     max-width: 100%;
     max-height: 100%;
     object-fit: contain;
+    will-change: transform;
 }
 
-/* Placeholder panel used for blank gallery slides until more product images are available. */
+.product-modal__image--entering,
+.product-modal__image--leaving {
+    position: absolute;
+    inset: 0;
+    margin: auto;
+    width: 100%;
+    height: 100%;
+    max-width: none;
+    max-height: none;
+    pointer-events: none;
+}
+
+.product-modal__image--entering-from-right {
+    animation: productModalImageEnterRight var(--modal-image-slide-duration) cubic-bezier(0.34, 0.78, 0.28, 1) both;
+}
+
+.product-modal__image--entering-from-left {
+    animation: productModalImageEnterLeft var(--modal-image-slide-duration) cubic-bezier(0.34, 0.78, 0.28, 1) both;
+}
+
+.product-modal__image--leaving {
+    z-index: 2;
+}
+
+.product-modal__image--leaving-to-left {
+    animation: productModalImageExitLeft var(--modal-image-slide-duration) cubic-bezier(0.34, 0.78, 0.28, 1) both;
+}
+
+.product-modal__image--leaving-to-right {
+    animation: productModalImageExitRight var(--modal-image-slide-duration) cubic-bezier(0.34, 0.78, 0.28, 1) both;
+}
+
+@keyframes productModalImageEnterRight {
+    0% {
+        transform: translateX(100%);
+    }
+
+    100% {
+        transform: translateX(0);
+    }
+}
+
+@keyframes productModalImageEnterLeft {
+    0% {
+        transform: translateX(-100%);
+    }
+
+    100% {
+        transform: translateX(0);
+    }
+}
+
+@keyframes productModalImageExitLeft {
+    0% {
+        transform: translateX(0);
+    }
+
+    100% {
+        transform: translateX(-100%);
+    }
+}
+
+@keyframes productModalImageExitRight {
+    0% {
+        transform: translateX(0);
+    }
+
+    100% {
+        transform: translateX(100%);
+    }
+}
+
+/* Fallback panel kept for non-image slides if a future gallery item needs it. */
 .product-modal__blank {
     width: min(250px, 78%);
     aspect-ratio: 4 / 5;
@@ -1805,6 +1898,8 @@ nav::after {
 }
 
 @media (prefers-reduced-motion: reduce) {
+    .product-modal__image--entering,
+    .product-modal__image--leaving,
     .cart-message.is-visible,
     .cart-message.is-visible.is-hiding,
     .product-modal__message.is-visible,

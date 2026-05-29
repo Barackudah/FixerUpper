@@ -122,6 +122,7 @@
      */
     const modal = document.getElementById("product-modal");
     const modalTitle = document.getElementById("modal-product-title");
+    const modalImageStage = modal.querySelector(".product-modal__image-stage");
     const modalImage = document.getElementById("modal-product-image");
     const modalBlank = document.getElementById("modal-product-blank");
     const modalDots = document.getElementById("modal-product-dots");
@@ -157,6 +158,11 @@
     let cartMessageTimer = 0;
     let cartMessageHideTimer = 0;
     let cartMessageAnimationFrame = 0;
+    let slideAnimationTimer = 0;
+    let imageSwipeStartX = 0;
+    let imageSwipeStartY = 0;
+    let isTrackingImageSwipe = false;
+    let isImageSwipeIntent = false;
 
     /*
      * Checks whether an element can still scroll in the requested direction.
@@ -283,9 +289,8 @@
     /*
      * Builds the slide list for the image area.
      *
-     * Real product images come from the database when available. Blank slides
-     * preserve the current carousel and dot structure until more gallery images
-     * are added for each product.
+     * Real product images come from the database when available. Placeholder
+     * slides keep every dot animated until more gallery images are added.
      */
     function getSlides(product) {
         const slides = Array.isArray(product.images) && product.images.length
@@ -297,7 +302,11 @@
             : [{ type: "image", src: product.image, alt: product.title }];
 
         while (slides.length < 8) {
-            slides.push({ type: "blank" });
+            slides.push({
+                type: "image",
+                src: "assets/images/pc_noimage.png",
+                alt: `${product.title} image coming soon`
+            });
         }
 
         return slides.slice(0, 8);
@@ -447,28 +456,86 @@
         });
     }
 
+    function clearSlideAnimation() {
+        window.clearTimeout(slideAnimationTimer);
+        modalImage.classList.remove(
+            "product-modal__image--entering",
+            "product-modal__image--entering-from-left",
+            "product-modal__image--entering-from-right"
+        );
+        modalImageStage.querySelectorAll(".product-modal__image--leaving").forEach((image) => {
+            image.remove();
+        });
+    }
+
+    function renderImageSlide(slide, shouldAnimate, direction) {
+        const canAnimate = shouldAnimate && !modalImage.hidden && modalImage.getAttribute("src");
+        const isForward = direction !== "backward";
+
+        clearSlideAnimation();
+
+        if (canAnimate) {
+            const leavingImage = modalImage.cloneNode(false);
+            leavingImage.removeAttribute("id");
+            leavingImage.className = [
+                "product-modal__image",
+                "product-modal__image--leaving",
+                isForward ? "product-modal__image--leaving-to-left" : "product-modal__image--leaving-to-right"
+            ].join(" ");
+            leavingImage.hidden = false;
+            leavingImage.addEventListener("animationend", () => {
+                leavingImage.remove();
+            }, { once: true });
+            modalImageStage.appendChild(leavingImage);
+        }
+
+        modalImage.src = slide.src;
+        modalImage.alt = slide.alt;
+        modalImage.hidden = false;
+        modalBlank.hidden = true;
+
+        if (canAnimate) {
+            modalImage.classList.add(
+                "product-modal__image--entering",
+                isForward ? "product-modal__image--entering-from-right" : "product-modal__image--entering-from-left"
+            );
+            modalImage.addEventListener("animationend", () => {
+                modalImage.classList.remove(
+                    "product-modal__image--entering",
+                    "product-modal__image--entering-from-left",
+                    "product-modal__image--entering-from-right"
+                );
+            }, { once: true });
+
+            slideAnimationTimer = window.setTimeout(clearSlideAnimation, 650);
+        }
+    }
+
     /*
      * Shows the requested slide and updates dot state.
      *
-     * A slide with type image fills the <img> element. A blank slide hides the
-     * image and shows the placeholder element. aria-current marks the active dot
-     * for assistive technologies.
+     * Image slides animate from the side of the selected dot. The previous image
+     * exits in the opposite direction while aria-current marks the active dot for
+     * assistive technologies.
      */
-    function setSlide(index) {
+    function setSlide(index, options) {
         if (!activeProduct) {
             return;
         }
 
+        const previousSlide = activeSlide;
+        const shouldAnimate = !(options && options.animate === false) && index !== previousSlide;
+        const direction = options && options.direction
+            ? options.direction
+            : (index < previousSlide ? "backward" : "forward");
         const slides = getSlides(activeProduct);
         const slide = slides[index] || slides[0];
         activeSlide = index;
 
         if (slide.type === "image") {
-            modalImage.src = slide.src;
-            modalImage.alt = slide.alt;
-            modalImage.hidden = false;
-            modalBlank.hidden = true;
+            renderImageSlide(slide, shouldAnimate, direction);
         } else {
+            clearSlideAnimation();
             modalImage.hidden = true;
             modalBlank.hidden = false;
         }
@@ -478,6 +545,85 @@
             dot.classList.toggle("is-active", isActive);
             dot.setAttribute("aria-current", isActive ? "true" : "false");
         });
+    }
+
+    function goToRelativeSlide(step) {
+        if (!activeProduct || step === 0) {
+            return;
+        }
+
+        const slides = getSlides(activeProduct);
+
+        if (slides.length < 2) {
+            return;
+        }
+
+        const nextSlide = (activeSlide + step + slides.length) % slides.length;
+
+        setSlide(nextSlide, {
+            direction: step > 0 ? "forward" : "backward"
+        });
+    }
+
+    function beginImageSwipe(event) {
+        if (!activeProduct || event.touches.length !== 1) {
+            isTrackingImageSwipe = false;
+            return;
+        }
+
+        const touch = event.touches[0];
+        imageSwipeStartX = touch.clientX;
+        imageSwipeStartY = touch.clientY;
+        isTrackingImageSwipe = true;
+        isImageSwipeIntent = false;
+    }
+
+    function trackImageSwipe(event) {
+        if (!isTrackingImageSwipe || event.touches.length !== 1) {
+            return;
+        }
+
+        const touch = event.touches[0];
+        const deltaX = touch.clientX - imageSwipeStartX;
+        const deltaY = touch.clientY - imageSwipeStartY;
+        const absX = Math.abs(deltaX);
+        const absY = Math.abs(deltaY);
+
+        if (!isImageSwipeIntent && (absX > 10 || absY > 10)) {
+            isImageSwipeIntent = absX > absY * 1.18;
+        }
+
+        if (isImageSwipeIntent) {
+            event.preventDefault();
+        }
+    }
+
+    function endImageSwipe(event) {
+        if (!isTrackingImageSwipe) {
+            return;
+        }
+
+        const touch = event.changedTouches[0];
+        const deltaX = touch.clientX - imageSwipeStartX;
+        const deltaY = touch.clientY - imageSwipeStartY;
+        const absX = Math.abs(deltaX);
+        const absY = Math.abs(deltaY);
+        const shouldChangeSlide = absX >= 46 && absX > absY * 1.18;
+
+        isTrackingImageSwipe = false;
+        isImageSwipeIntent = false;
+
+        if (!shouldChangeSlide) {
+            return;
+        }
+
+        event.preventDefault();
+        goToRelativeSlide(deltaX < 0 ? 1 : -1);
+    }
+
+    function cancelImageSwipe() {
+        isTrackingImageSwipe = false;
+        isImageSwipeIntent = false;
     }
 
     /*
@@ -509,7 +655,7 @@
         updateCartAvailability(product);
         renderDetails(product);
         renderDots(getSlides(product));
-        setSlide(0);
+        setSlide(0, { animate: false });
 
         lockPageScroll();
         modal.classList.add("is-open");
@@ -618,6 +764,11 @@
     if (cartButton) {
         cartButton.addEventListener("click", addActiveProductToCart);
     }
+
+    modalImageStage.addEventListener("touchstart", beginImageSwipe, { passive: true });
+    modalImageStage.addEventListener("touchmove", trackImageSwipe, { passive: false });
+    modalImageStage.addEventListener("touchend", endImageSwipe, { passive: false });
+    modalImageStage.addEventListener("touchcancel", cancelImageSwipe);
 
     /*
      * Any element inside the modal with the data-modal-close attribute closes the
