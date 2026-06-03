@@ -65,18 +65,25 @@ DEFAULT_SPECS = [
 ]
 
 COLORS = {
-    "bg": "#333333",
+    "bg": "#171717",
+    "canvas": "#222222",
     "panel": "#242424",
     "panel_alt": "#2d2d2d",
+    "card": "#303030",
+    "card_dark": "#1f1f1f",
     "field": "#3a3a3a",
-    "field_dark": "#2e2e2e",
+    "field_dark": "#242424",
+    "line_dark": "#171717",
     "line": "#565656",
     "line_bright": "#7a7a7a",
     "text": "#ffffff",
     "muted": "#a8a8a8",
+    "muted_dark": "#7a7a7a",
     "accent": "#7eff00",
     "accent_soft": "#95ff38",
+    "accent_deep": "#274400",
     "danger": "#ff8d8d",
+    "warning": "#ffae42",
 }
 
 
@@ -360,8 +367,8 @@ class InventoryDesktopApp(tk.Tk):
         self.image_source_path: Path | None = None
 
         self.title("FIXERUPPER Inventory Desktop")
-        self.geometry("1180x760")
-        self.minsize(1040, 680)
+        self.geometry("1240x780")
+        self.minsize(1100, 700)
         self.configure(bg=COLORS["bg"])
 
         self._configure_style()
@@ -375,18 +382,36 @@ class InventoryDesktopApp(tk.Tk):
         style = ttk.Style(self)
         style.theme_use("clam")
         default_font = ("Montserrat", 9)
-        heading_font = ("Teko", 18, "bold")
+        heading_font = ("Teko", 24, "bold")
 
         style.configure(".", font=default_font, background=COLORS["bg"], foreground=COLORS["text"])
         style.configure("TFrame", background=COLORS["bg"])
         style.configure("Panel.TFrame", background=COLORS["panel"])
         style.configure("Section.TFrame", background=COLORS["panel_alt"])
+        style.configure("Preview.TFrame", background=COLORS["card"])
+        style.configure("Actions.TFrame", background=COLORS["bg"])
         style.configure("TLabel", background=COLORS["bg"], foreground=COLORS["text"])
         style.configure("Muted.TLabel", background=COLORS["bg"], foreground=COLORS["muted"])
         style.configure("Panel.TLabel", background=COLORS["panel"], foreground=COLORS["text"])
+        style.configure("PanelMuted.TLabel", background=COLORS["panel"], foreground=COLORS["muted"])
         style.configure("Section.TLabel", background=COLORS["panel_alt"], foreground=COLORS["text"])
+        style.configure("SectionMuted.TLabel", background=COLORS["panel_alt"], foreground=COLORS["muted"])
+        style.configure("Preview.TLabel", background=COLORS["card"], foreground=COLORS["text"])
+        style.configure("PreviewMuted.TLabel", background=COLORS["card"], foreground=COLORS["muted"])
+        style.configure("PreviewAccent.TLabel", background=COLORS["card"], foreground=COLORS["accent"])
         style.configure("Title.TLabel", font=heading_font, background=COLORS["bg"], foreground=COLORS["accent"])
-        style.configure("Header.TLabel", font=("Montserrat", 10, "bold"), background=COLORS["panel_alt"], foreground=COLORS["text"])
+        style.configure(
+            "Header.TLabel",
+            font=("Montserrat", 10, "bold"),
+            background=COLORS["panel_alt"],
+            foreground=COLORS["accent"],
+        )
+        style.configure(
+            "SidebarHeader.TLabel",
+            font=("Montserrat", 10, "bold"),
+            background=COLORS["panel"],
+            foreground=COLORS["accent"],
+        )
         style.configure(
             "TEntry",
             fieldbackground=COLORS["field"],
@@ -414,7 +439,7 @@ class InventoryDesktopApp(tk.Tk):
         )
         style.map(
             "TButton",
-            background=[("active", COLORS["panel_alt"]), ("pressed", COLORS["panel"])],
+            background=[("active", COLORS["card"]), ("pressed", COLORS["panel"])],
             foreground=[("active", COLORS["accent"])],
             bordercolor=[("active", COLORS["accent"])],
         )
@@ -426,18 +451,24 @@ class InventoryDesktopApp(tk.Tk):
         )
         style.configure(
             "Accent.TButton",
-            background=COLORS["field_dark"],
+            background=COLORS["accent_deep"],
             foreground=COLORS["accent"],
             bordercolor=COLORS["accent"],
-            padding=(12, 7),
+            padding=(14, 8),
+        )
+        style.map(
+            "Accent.TButton",
+            background=[("active", "#345d00"), ("pressed", COLORS["accent_deep"])],
+            foreground=[("active", COLORS["text"])],
+            bordercolor=[("active", COLORS["accent"])],
         )
         style.configure(
             "Treeview",
-            background=COLORS["panel"],
-            fieldbackground=COLORS["panel"],
+            background=COLORS["card_dark"],
+            fieldbackground=COLORS["card_dark"],
             foreground=COLORS["text"],
             bordercolor=COLORS["line"],
-            rowheight=27,
+            rowheight=29,
         )
         style.configure(
             "Treeview.Heading",
@@ -446,7 +477,7 @@ class InventoryDesktopApp(tk.Tk):
             bordercolor=COLORS["line"],
             font=("Montserrat", 8, "bold"),
         )
-        style.map("Treeview", background=[("selected", "#405c2e")], foreground=[("selected", COLORS["text"])])
+        style.map("Treeview", background=[("selected", "#3d5f23")], foreground=[("selected", COLORS["text"])])
         style.configure("Vertical.TScrollbar", background=COLORS["field_dark"], troughcolor=COLORS["panel"])
 
     def _build_layout(self) -> None:
@@ -455,15 +486,39 @@ class InventoryDesktopApp(tk.Tk):
         self.columnconfigure(1, weight=1)
         self.rowconfigure(1, weight=1)
 
-        title_bar = ttk.Frame(self, style="TFrame", padding=(18, 14, 18, 8))
-        title_bar.grid(row=0, column=0, columnspan=2, sticky="ew")
-        title_bar.columnconfigure(1, weight=1)
-        ttk.Label(title_bar, text="FIXERUPPER", style="Title.TLabel").grid(row=0, column=0, sticky="w")
-        ttk.Label(
-            title_bar,
-            text="desktop product and inventory creator",
-            style="Muted.TLabel",
-        ).grid(row=0, column=1, sticky="w", padx=(12, 0))
+        header = tk.Frame(self, bg=COLORS["bg"], highlightthickness=0)
+        header.grid(row=0, column=0, columnspan=2, sticky="ew")
+        header.columnconfigure(1, weight=1)
+
+        brand_block = tk.Frame(header, bg=COLORS["bg"])
+        brand_block.grid(row=0, column=0, sticky="w", padx=(20, 0), pady=(14, 10))
+        tk.Label(
+            brand_block,
+            text="FIXERUPPER",
+            bg=COLORS["bg"],
+            fg=COLORS["accent"],
+            font=("Teko", 28, "bold"),
+        ).grid(row=0, column=0, sticky="w")
+        tk.Label(
+            brand_block,
+            text="DESKTOP PRODUCT CREATOR",
+            bg=COLORS["bg"],
+            fg=COLORS["muted"],
+            font=("Montserrat", 8, "bold"),
+        ).grid(row=1, column=0, sticky="w")
+
+        tk.Label(
+            header,
+            text="ADMIN MODE",
+            bg=COLORS["field_dark"],
+            fg=COLORS["accent_soft"],
+            font=("Montserrat", 9, "bold"),
+            padx=14,
+            pady=7,
+        ).grid(row=0, column=2, sticky="e", padx=(8, 20), pady=(16, 10))
+
+        accent_line = tk.Frame(header, height=2, bg=COLORS["accent"])
+        accent_line.grid(row=1, column=0, columnspan=3, sticky="ew")
 
         self._build_products_panel()
         self._build_form_panel()
@@ -476,22 +531,24 @@ class InventoryDesktopApp(tk.Tk):
         """Build the left sidebar that previews active storefront products."""
 
         panel = ttk.Frame(self, style="Panel.TFrame", padding=12)
-        panel.grid(row=1, column=0, sticky="nsw", padx=(18, 8), pady=(0, 12))
-        panel.rowconfigure(2, weight=1)
+        panel.grid(row=1, column=0, sticky="nsw", padx=(20, 8), pady=(16, 12))
+        panel.rowconfigure(3, weight=1)
         panel.columnconfigure(0, weight=1)
 
-        ttk.Label(panel, text="Existing products", style="Panel.TLabel").grid(row=0, column=0, sticky="w")
-        ttk.Button(panel, text="Refresh", command=self.load_products).grid(row=1, column=0, sticky="ew", pady=(8, 10))
+        self.product_count_var = tk.StringVar(value="0 active products")
+        ttk.Label(panel, text="STOREFRONT PRODUCTS", style="SidebarHeader.TLabel").grid(row=0, column=0, sticky="w")
+        ttk.Label(panel, textvariable=self.product_count_var, style="PanelMuted.TLabel").grid(row=1, column=0, sticky="w", pady=(3, 8))
+        ttk.Button(panel, text="Refresh database", command=self.load_products).grid(row=2, column=0, sticky="ew", pady=(0, 10))
 
         columns = ("id", "slug", "name", "price", "stock", "location")
         self.products_tree = ttk.Treeview(panel, columns=columns, show="headings", height=20)
         headings = {
             "id": ("ID", 46),
             "slug": ("Slug", 92),
-            "name": ("Name", 210),
-            "price": ("Price", 70),
+            "name": ("Name", 190),
+            "price": ("Price", 68),
             "stock": ("Stock", 58),
-            "location": ("Location", 128),
+            "location": ("Location", 116),
         }
 
         for column, (label, width) in headings.items():
@@ -501,27 +558,27 @@ class InventoryDesktopApp(tk.Tk):
 
         scrollbar = ttk.Scrollbar(panel, orient="vertical", command=self.products_tree.yview)
         self.products_tree.configure(yscrollcommand=scrollbar.set)
-        self.products_tree.grid(row=2, column=0, sticky="nsew")
-        scrollbar.grid(row=2, column=1, sticky="ns")
+        self.products_tree.grid(row=3, column=0, sticky="nsew")
+        scrollbar.grid(row=3, column=1, sticky="ns")
 
         ttk.Label(
             panel,
-            text="The form creates a new active storefront product.",
-            style="Panel.TLabel",
-            wraplength=330,
-        ).grid(row=3, column=0, columnspan=2, sticky="ew", pady=(10, 0))
+            text="New products are written to products, product_inventory, product_images and product_specs.",
+            style="PanelMuted.TLabel",
+            wraplength=305,
+        ).grid(row=4, column=0, columnspan=2, sticky="ew", pady=(10, 0))
 
     def _build_form_panel(self) -> None:
         """Build the scrollable product creation form on the right."""
 
         wrapper = ttk.Frame(self, style="TFrame")
-        wrapper.grid(row=1, column=1, sticky="nsew", padx=(8, 18), pady=(0, 12))
+        wrapper.grid(row=1, column=1, sticky="nsew", padx=(8, 20), pady=(16, 12))
         wrapper.rowconfigure(0, weight=1)
         wrapper.columnconfigure(0, weight=1)
 
         self.form_canvas = tk.Canvas(
             wrapper,
-            bg=COLORS["bg"],
+            bg=COLORS["canvas"],
             highlightthickness=0,
             borderwidth=0,
         )
@@ -544,7 +601,16 @@ class InventoryDesktopApp(tk.Tk):
         self.location_var = tk.StringVar(value="Main workshop")
         self.supplier_var = tk.StringVar(value="FixerUpper Build Team")
 
-        product_section = self._section("Product")
+        self.preview_title_var = tk.StringVar(value="Product name")
+        self.preview_slug_var = tk.StringVar(value="product-slug")
+        self.preview_price_var = tk.StringVar(value="GBP 0")
+        self.preview_stock_var = tk.StringVar(value="1 in stock")
+        self.preview_description_var = tk.StringVar(value="Short product description preview.")
+        self.preview_image_var = tk.StringVar(value="assets/images/pc_noimage.png")
+
+        self._build_preview_panel()
+
+        product_section = self._section("PRODUCT")
         self._field(product_section, 0, "Name", self.name_var)
         self._field(product_section, 1, "Slug", self.slug_var, button_text="From name", button_command=self.fill_slug_from_name)
         self._field(product_section, 2, "Price", self.price_var)
@@ -553,12 +619,12 @@ class InventoryDesktopApp(tk.Tk):
         ttk.Button(product_section, text="Use placeholder", command=self.use_placeholder_image).grid(row=6, column=1, sticky="w", pady=(0, 8))
         ttk.Checkbutton(product_section, text="Active on storefront", variable=self.active_var).grid(row=7, column=1, sticky="w", pady=(0, 4))
 
-        inventory_section = self._section("Inventory")
+        inventory_section = self._section("INVENTORY")
         self._field(inventory_section, 0, "Stock quantity", self.stock_var, spin=True)
         self._field(inventory_section, 1, "Location", self.location_var)
         self._field(inventory_section, 2, "Supplier", self.supplier_var)
 
-        specs_section = self._section("Modal specs")
+        specs_section = self._section("MODAL SPECS")
         specs_section.columnconfigure(1, weight=1)
         self.specs_container = ttk.Frame(specs_section, style="Section.TFrame")
         self.specs_container.grid(row=0, column=0, columnspan=3, sticky="ew")
@@ -569,12 +635,144 @@ class InventoryDesktopApp(tk.Tk):
             pady=(10, 0),
         )
 
-        actions = ttk.Frame(self.form_frame, style="TFrame", padding=(0, 10, 0, 0))
+        actions = ttk.Frame(self.form_frame, style="Actions.TFrame", padding=(0, 10, 0, 0))
         actions.pack(fill="x")
         actions.columnconfigure(0, weight=1)
         ttk.Button(actions, text="Clear form", command=self.clear_form).grid(row=0, column=0, sticky="w")
-        self.save_button = ttk.Button(actions, text="Save new product", style="Accent.TButton", command=self.save_product)
+        self.save_button = ttk.Button(actions, text="SAVE PRODUCT", style="Accent.TButton", command=self.save_product)
         self.save_button.grid(row=0, column=1, sticky="e")
+        self._wire_preview_updates()
+        self._refresh_preview()
+
+    def _build_preview_panel(self) -> None:
+        """Build the storefront-style live preview above the form fields."""
+
+        preview = ttk.Frame(self.form_frame, style="Preview.TFrame", padding=16)
+        preview.pack(fill="x", pady=(0, 12))
+        preview.columnconfigure(1, weight=1)
+
+        image_stage = tk.Frame(
+            preview,
+            width=150,
+            height=118,
+            bg=COLORS["card_dark"],
+            highlightthickness=1,
+            highlightbackground=COLORS["line"],
+        )
+        image_stage.grid(row=0, column=0, rowspan=5, sticky="nsw", padx=(0, 16))
+        image_stage.grid_propagate(False)
+        tk.Label(
+            image_stage,
+            text="IMAGE\nSTAGE",
+            bg=COLORS["card_dark"],
+            fg=COLORS["muted_dark"],
+            font=("Montserrat", 9, "bold"),
+            justify="center",
+        ).place(relx=0.5, rely=0.42, anchor="center")
+        tk.Label(
+            image_stage,
+            textvariable=self.preview_image_var,
+            bg=COLORS["card_dark"],
+            fg=COLORS["muted"],
+            font=("Montserrat", 7),
+            wraplength=128,
+            justify="center",
+        ).place(relx=0.5, rely=0.78, anchor="center")
+
+        ttk.Label(preview, text="LIVE STOREFRONT PREVIEW", style="PreviewAccent.TLabel").grid(row=0, column=1, sticky="w")
+        tk.Label(
+            preview,
+            textvariable=self.preview_title_var,
+            bg=COLORS["card"],
+            fg=COLORS["text"],
+            font=("Teko", 22, "bold"),
+            anchor="w",
+        ).grid(row=1, column=1, sticky="ew", pady=(4, 0))
+        ttk.Label(preview, textvariable=self.preview_slug_var, style="PreviewMuted.TLabel").grid(row=2, column=1, sticky="w")
+        ttk.Label(
+            preview,
+            textvariable=self.preview_description_var,
+            style="PreviewMuted.TLabel",
+            wraplength=650,
+        ).grid(row=3, column=1, sticky="ew", pady=(7, 8))
+
+        footer = ttk.Frame(preview, style="Preview.TFrame")
+        footer.grid(row=4, column=1, sticky="ew")
+        footer.columnconfigure(1, weight=1)
+        self.preview_stock_label = tk.Label(
+            footer,
+            textvariable=self.preview_stock_var,
+            bg=COLORS["card_dark"],
+            fg=COLORS["accent_soft"],
+            font=("Montserrat", 8, "bold"),
+            padx=10,
+            pady=4,
+        )
+        self.preview_stock_label.grid(row=0, column=0, sticky="w")
+        tk.Label(
+            footer,
+            textvariable=self.preview_price_var,
+            bg=COLORS["card"],
+            fg=COLORS["accent"],
+            font=("Teko", 20, "bold"),
+        ).grid(row=0, column=2, sticky="e")
+
+    def _wire_preview_updates(self) -> None:
+        """Refresh the live product preview when form values change."""
+
+        watched_vars = [
+            self.name_var,
+            self.slug_var,
+            self.price_var,
+            self.image_var,
+            self.stock_var,
+        ]
+
+        for variable in watched_vars:
+            variable.trace_add("write", lambda *_args: self._refresh_preview())
+
+        self.description_text.bind("<KeyRelease>", lambda _event: self._refresh_preview())
+        self.description_text.bind("<<Paste>>", lambda _event: self.after_idle(self._refresh_preview))
+
+    def _refresh_preview(self) -> None:
+        """Project the current form state into the storefront preview card."""
+
+        name = clean_one_line(self.name_var.get()) or "Product name"
+        slug = slugify(self.slug_var.get() or self.name_var.get()) or "product-slug"
+        description = self.description_text.get("1.0", "end").strip() or "Short product description preview."
+        price_text = re.sub(r"[^0-9.]", "", self.price_var.get())
+        image_path = self.image_var.get().strip().replace("\\", "/") or "assets/images/pc_noimage.png"
+
+        try:
+            price = Decimal(price_text).quantize(Decimal("0.01"))
+        except (InvalidOperation, ValueError):
+            price = Decimal("0.00")
+
+        try:
+            stock_quantity = int(self.stock_var.get())
+        except ValueError:
+            stock_quantity = 0
+
+        if stock_quantity <= 0:
+            stock_text = "out of stock"
+            stock_color = COLORS["danger"]
+        elif stock_quantity <= 3:
+            stock_text = f"low stock: {stock_quantity} left"
+            stock_color = COLORS["danger"]
+        elif stock_quantity <= 9:
+            stock_text = f"medium stock: {stock_quantity} left"
+            stock_color = COLORS["warning"]
+        else:
+            stock_text = f"{stock_quantity} in stock"
+            stock_color = COLORS["accent_soft"]
+
+        self.preview_title_var.set(name)
+        self.preview_slug_var.set(slug)
+        self.preview_price_var.set(f"GBP {price:,.0f}")
+        self.preview_stock_var.set(stock_text)
+        self.preview_description_var.set(clean_one_line(description)[:180])
+        self.preview_image_var.set(image_path)
+        self.preview_stock_label.configure(fg=stock_color)
 
     def _sync_form_scrollregion(self, _event: tk.Event) -> None:
         """Keep the canvas scroll area aligned with the dynamic form height."""
@@ -608,7 +806,7 @@ class InventoryDesktopApp(tk.Tk):
         """Create one labelled entry/spinbox row with an optional action button."""
 
         real_row = row + 1
-        ttk.Label(parent, text=label, style="Section.TLabel").grid(row=real_row, column=0, sticky="w", padx=(0, 12), pady=5)
+        ttk.Label(parent, text=label.upper(), style="SectionMuted.TLabel").grid(row=real_row, column=0, sticky="w", padx=(0, 12), pady=5)
 
         if spin:
             field = ttk.Spinbox(parent, from_=0, to=999999, textvariable=variable, width=12)
@@ -624,7 +822,7 @@ class InventoryDesktopApp(tk.Tk):
         """Create the multiline description field styled like the dark form."""
 
         real_row = row + 1
-        ttk.Label(parent, text=label, style="Section.TLabel").grid(row=real_row, column=0, sticky="nw", padx=(0, 12), pady=5)
+        ttk.Label(parent, text=label.upper(), style="SectionMuted.TLabel").grid(row=real_row, column=0, sticky="nw", padx=(0, 12), pady=5)
         field = tk.Text(
             parent,
             height=height,
@@ -699,6 +897,7 @@ class InventoryDesktopApp(tk.Tk):
             return
 
         self.existing_slugs = {product.slug for product in self.products}
+        self.product_count_var.set(f"{len(self.products)} active products")
         self.products_tree.delete(*self.products_tree.get_children())
 
         for product in self.products:
@@ -778,6 +977,7 @@ class InventoryDesktopApp(tk.Tk):
         self.description_text.delete("1.0", "end")
         self.image_source_path = None
         self._reset_specs()
+        self._refresh_preview()
 
         if show_status:
             self.set_status("Form cleared.")
@@ -827,7 +1027,7 @@ class InventoryDesktopApp(tk.Tk):
         name = clean_one_line(self.name_var.get())
         slug = slugify(self.slug_var.get())
         short_description = self.description_text.get("1.0", "end").strip()
-        price_text = self.price_var.get().strip().replace("GBP", "").replace("gbp", "").replace("£", "").replace(",", "")
+        price_text = re.sub(r"[^0-9.]", "", self.price_var.get())
         image = self.image_var.get().strip().replace("\\", "/")
         location = clean_one_line(self.location_var.get()) or "Unassigned"
         supplier = clean_one_line(self.supplier_var.get())
