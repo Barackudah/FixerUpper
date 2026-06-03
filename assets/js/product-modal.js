@@ -169,6 +169,7 @@
     let isImageSwipeIntent = false;
     let cartButtonLabelAnimationTimer = 0;
     let cartButtonLabelSettleTimer = 0;
+    const preloadedModalImages = new Map();
     const cartButtonLabelSlideDuration = 420;
     const cartButtonLabelColorFadeDuration = 700;
     const modalCloseResetDelay = 320;
@@ -319,6 +320,44 @@
         }
 
         return slides.slice(0, 8);
+    }
+
+    function preloadImage(src) {
+        if (!src || preloadedModalImages.has(src)) {
+            return;
+        }
+
+        const image = new Image();
+        const preload = new Promise((resolve) => {
+            image.onload = resolve;
+            image.onerror = resolve;
+        });
+
+        image.decoding = "async";
+        image.src = src;
+        preloadedModalImages.set(src, { image, preload });
+    }
+
+    function preloadModalSlides(product) {
+        if (!product) {
+            return;
+        }
+
+        getSlides(product).forEach((slide) => {
+            if (slide.type === "image") {
+                preloadImage(slide.src);
+            }
+        });
+    }
+
+    function preloadPrimaryModalImages() {
+        Object.keys(products).forEach((productId) => {
+            const firstSlide = getSlides(products[productId])[0];
+
+            if (firstSlide && firstSlide.type === "image") {
+                preloadImage(firstSlide.src);
+            }
+        });
     }
 
     /*
@@ -833,6 +872,7 @@
         activeSlide = 0;
         lastFocusedElement = document.activeElement;
         showCartMessage("", "");
+        preloadModalSlides(product);
 
         if (cartButton) {
             cartButton.dataset.productId = activeProductId;
@@ -953,11 +993,22 @@
      * intercepts the click and opens the modal instead of navigating away.
      */
     moreInfoLinks.forEach((link) => {
+        const preloadLinkedProduct = () => preloadModalSlides(products[link.dataset.productId]);
+
+        link.addEventListener("mouseenter", preloadLinkedProduct, { once: true });
+        link.addEventListener("focus", preloadLinkedProduct, { once: true });
+        link.addEventListener("touchstart", preloadLinkedProduct, { once: true, passive: true });
         link.addEventListener("click", (event) => {
             event.preventDefault();
             openModal(link.dataset.productId);
         });
     });
+
+    if ("requestIdleCallback" in window) {
+        window.requestIdleCallback(preloadPrimaryModalImages, { timeout: 1800 });
+    } else {
+        window.setTimeout(preloadPrimaryModalImages, 900);
+    }
 
     if (cartButton) {
         cartButton.addEventListener("click", addActiveProductToCart);

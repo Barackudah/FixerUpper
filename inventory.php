@@ -65,11 +65,7 @@ $inventoryItems = [];
 
 while ($item = $inventoryResult->fetch_assoc()) {
     $stockQuantity = (int) $item['stock_quantity'];
-    $status = inventoryStatus($stockQuantity);
-
     $item['stock_quantity'] = $stockQuantity;
-    $item['stock_status'] = $status;
-    $item['stock_label'] = inventoryStatusLabel($stockQuantity);
 
     $inventoryItems[] = $item;
 }
@@ -129,7 +125,6 @@ unset($_SESSION['inventory_notice']);
                 <div class="cart-table inventory-table" data-inventory-table>
                     <div class="cart-header inventory-header" aria-hidden="true">
                         <span class="cart-heading cart-heading--items inventory-heading--items">ITEMS</span>
-                        <span class="cart-heading inventory-heading inventory-heading--status">STATUS</span>
                         <span class="cart-heading inventory-heading inventory-heading--stock">STOCK</span>
                         <span class="cart-heading inventory-heading inventory-heading--location">LOCATION</span>
                         <span class="cart-heading inventory-heading inventory-heading--supplier">SUPPLIER</span>
@@ -142,13 +137,9 @@ unset($_SESSION['inventory_notice']);
                             </a>
 
                             <a class="cart-item-title inventory-item-title" href="index.php#<?= e($item['slug']); ?>">
-                                <?= e($item['name']); ?>
+                                <span class="inventory-item-name"><?= e($item['name']); ?></span>
                                 <span class="cart-item-stock"><?= e($item['slug']); ?></span>
                             </a>
-
-                            <span class="inventory-status inventory-status--<?= e($item['stock_status']); ?>">
-                                <?= e($item['stock_label']); ?>
-                            </span>
 
                             <div class="cart-quantity-cell inventory-quantity-cell inventory-quantity-cell--stock">
                                 <span class="visually-hidden">Stock</span>

@@ -91,40 +91,11 @@
         return Number.isFinite(quantity) && quantity >= 0 ? quantity : normalizeQuantity(input.value);
     }
 
-    function getStockStatus(quantity) {
-        if (quantity < 1) {
-            return "out";
-        }
-
-        return quantity < 3 ? "low" : "in";
-    }
-
-    function updateStatus(input, quantity) {
-        const row = input.closest(".inventory-row");
-        const statusTarget = row ? row.querySelector(".inventory-status") : null;
-
-        if (!statusTarget) {
-            return;
-        }
-
-        const status = getStockStatus(quantity);
-        const labels = {
-            in: "in stock",
-            low: "low stock",
-            out: "out of stock"
-        };
-
-        statusTarget.textContent = labels[status];
-        statusTarget.classList.remove("inventory-status--in", "inventory-status--low", "inventory-status--out");
-        statusTarget.classList.add(`inventory-status--${status}`);
-    }
-
     function setQuantity(input, quantity) {
         const normalizedQuantity = normalizeQuantity(quantity);
 
         input.value = String(normalizedQuantity);
         input.dataset.previousQuantity = String(normalizedQuantity);
-        updateStatus(input, normalizedQuantity);
     }
 
     function setPendingRemove(cell, isPending, restoreQuantity) {

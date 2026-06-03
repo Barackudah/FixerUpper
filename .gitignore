@@ -1,2 +1,4 @@
 .chrome-profile/
 storage/sessions/
+__pycache__/
+*.py[cod]
