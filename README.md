@@ -134,7 +134,8 @@ Optional environment variables:
 
 ## Inventory Notes
 
-- Low stock is calculated with a fixed threshold: 3 items or fewer.
+- Out of stock is shown when inventory reaches 0.
+- Low stock is calculated as 1 to 3 items.
 - Medium stock is calculated as 4 to 9 items.
 - `product_inventory` does not currently use a `reorder_level` column.
 - Cart endpoints always re-check stock on the server before accepting quantity

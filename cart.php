@@ -58,6 +58,7 @@ if ($cartQuantities) {
     foreach ($cartQuantities as $productId => $quantity) {
         if (!isset($cartProducts[$productId])) {
             // Skip stale session rows that point to products no longer available.
+            unset($_SESSION['cart'][$productId]);
             continue;
         }
 

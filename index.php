@@ -83,6 +83,14 @@ if ($productIds) {
 $products = array_values($productsById);
 $modalProducts = [];
 
+foreach ($_SESSION['cart'] ?? [] as $productId => $quantity) {
+    $productId = (int) $productId;
+
+    if ($productId < 1 || (int) $quantity < 1 || !isset($productsById[$productId])) {
+        unset($_SESSION['cart'][$productId]);
+    }
+}
+
 // The navigation badge shows unique products and stays empty when the cart has no items.
 $cartCount = cartBadgeCount($_SESSION['cart'] ?? []);
 $cartProductIds = [];

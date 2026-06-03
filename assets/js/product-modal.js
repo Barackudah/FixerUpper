@@ -558,7 +558,7 @@
         if (cartButton) {
             cartButton.disabled = isOutOfStock || isInCart;
             cartButton.dataset.cartState = isInCart ? "added" : (isOutOfStock ? "unavailable" : "default");
-            setCartButtonLabel(isInCart ? "added to cart" : "Add to Cart", Boolean(options && options.animate));
+            setCartButtonLabel(isInCart ? "added to cart" : (isOutOfStock ? "out of stock" : "Add to Cart"), Boolean(options && options.animate));
         }
     }
 

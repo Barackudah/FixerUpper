@@ -98,6 +98,18 @@
         input.dataset.previousQuantity = String(normalizedQuantity);
     }
 
+    function setRemoveFlag(cell, shouldRemove) {
+        const row = cell.closest(".inventory-row");
+        const removeFlag = row ? row.querySelector("[data-inventory-remove-flag]") : null;
+
+        if (!row || !removeFlag) {
+            return;
+        }
+
+        row.classList.toggle("is-remove-marked", shouldRemove);
+        removeFlag.value = shouldRemove ? "1" : "0";
+    }
+
     function setPendingRemove(cell, isPending, restoreQuantity) {
         const quantityControl = cell.querySelector(".inventory-quantity-control");
         const removeConfirmation = cell.querySelector("[data-inventory-remove-confirmation]");
@@ -145,6 +157,7 @@
         }
 
         if (cell) {
+            setRemoveFlag(cell, false);
             setPendingRemove(cell, false);
         }
 
@@ -178,12 +191,14 @@
             }
 
             if (removeChoice.dataset.inventoryRemoveConfirm === "no") {
-                setQuantity(input, Number(cell.dataset.pendingRemoveQuantity) || 1);
+                setQuantity(input, Number(cell.dataset.pendingRemoveQuantity) || 0);
+                setRemoveFlag(cell, false);
                 setPendingRemove(cell, false);
                 return;
             }
 
             setQuantity(input, 0);
+            setRemoveFlag(cell, true);
             setPendingRemove(cell, false);
             return;
         }
@@ -206,6 +221,11 @@
         const step = Number(button.dataset.inventoryStep) || 0;
         const nextQuantity = normalizeQuantity(currentQuantity + step);
 
+        if (currentQuantity === 0 && step < 0) {
+            setPendingRemove(cell, true, currentQuantity);
+            return;
+        }
+
         if (nextQuantity === currentQuantity) {
             return;
         }
@@ -215,6 +235,7 @@
             return;
         }
 
+        setRemoveFlag(cell, false);
         setPendingRemove(cell, false);
         setQuantity(input, nextQuantity);
     });

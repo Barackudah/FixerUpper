@@ -11,7 +11,7 @@ ensureInventoryTable($conn);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $submittedItems = $_POST['inventory'] ?? [];
-    $stmt = $conn->prepare(
+    $inventoryStmt = $conn->prepare(
         'INSERT INTO product_inventory (product_id, stock_quantity, location, supplier)
          VALUES (?, ?, ?, ?)
          ON DUPLICATE KEY UPDATE
@@ -19,11 +19,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             location = VALUES(location),
             supplier = VALUES(supplier)'
     );
+    $removeStmt = $conn->prepare(
+        'UPDATE products
+         SET is_active = 0
+         WHERE id = ?'
+    );
+    $removedCount = 0;
 
     foreach ($submittedItems as $productId => $item) {
         $productId = (int) $productId;
 
         if ($productId < 1) {
+            continue;
+        }
+
+        $shouldRemove = (string) ($item['remove'] ?? '0') === '1';
+
+        if ($shouldRemove) {
+            $removeStmt->bind_param('i', $productId);
+            $removeStmt->execute();
+            unset($_SESSION['cart'][$productId]);
+            $removedCount++;
             continue;
         }
 
@@ -35,11 +51,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $location = 'Unassigned';
         }
 
-        $stmt->bind_param('iiss', $productId, $stockQuantity, $location, $supplier);
-        $stmt->execute();
+        $inventoryStmt->bind_param('iiss', $productId, $stockQuantity, $location, $supplier);
+        $inventoryStmt->execute();
     }
 
-    $_SESSION['inventory_notice'] = 'inventory updated.';
+    $_SESSION['inventory_notice'] = $removedCount > 0 ? 'inventory updated. item removed.' : 'inventory updated.';
     header('Location: inventory.php');
     exit;
 }
@@ -132,6 +148,8 @@ unset($_SESSION['inventory_notice']);
 
                     <?php foreach ($inventoryItems as $item): ?>
                         <article class="cart-row inventory-row">
+                            <input type="hidden" name="inventory[<?= (int) $item['id']; ?>][remove]" value="0" data-inventory-remove-flag>
+
                             <a class="cart-item-media" href="index.php#<?= e($item['slug']); ?>" aria-label="<?= e($item['name']); ?>">
                                 <img src="<?= e($item['main_image']); ?>" alt="<?= e($item['name']); ?>" onerror="this.onerror=null; this.src='assets/images/pc_1.png';">
                             </a>

@@ -50,6 +50,10 @@ function inventoryStatus($stockQuantity)
 {
     $stockQuantity = (int) $stockQuantity;
 
+    if ($stockQuantity <= 0) {
+        return 'out';
+    }
+
     if ($stockQuantity <= 3) {
         return 'low';
     }
@@ -64,6 +68,10 @@ function inventoryStatus($stockQuantity)
 function inventoryStatusLabel($stockQuantity)
 {
     $status = inventoryStatus($stockQuantity);
+
+    if ($status === 'out') {
+        return 'out of stock';
+    }
 
     if ($status === 'low') {
         return 'low stock';
@@ -80,6 +88,10 @@ function inventoryStockText($stockQuantity)
 {
     $stockQuantity = (int) $stockQuantity;
     $status = inventoryStatus($stockQuantity);
+
+    if ($status === 'out') {
+        return 'out of stock';
+    }
 
     if ($status === 'low') {
         return 'low stock: ' . $stockQuantity . ' left';
