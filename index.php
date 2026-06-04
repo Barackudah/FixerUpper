@@ -11,15 +11,22 @@ require_once __DIR__ . '/inventory_helpers.php';
 ensureInventoryTable($conn);
 
 // Decide which decorative divider variants are visible at each responsive breakpoint.
-function productDividerClasses($position)
+function productDividerClasses($position, $totalProducts)
 {
     $classes = ['products-dots', 'products-dots--inline'];
+    $isLastProduct = $position === $totalProducts;
 
-    if ($position % 3 === 0) {
+    if ($position % 3 === 0 || $isLastProduct) {
         $classes[] = 'products-dots--desktop-row';
     }
 
-    $classes[] = $position % 2 === 0 ? 'products-dots--compact-row' : 'products-dots--single-column';
+    if ($position % 2 === 0 || $isLastProduct) {
+        $classes[] = 'products-dots--compact-row';
+    }
+
+    if ($position % 2 !== 0 || $isLastProduct) {
+        $classes[] = 'products-dots--single-column';
+    }
 
     return implode(' ', $classes);
 }
@@ -81,6 +88,7 @@ if ($productIds) {
 
 // Re-index products for rendering while keeping a slug-keyed map for the modal script.
 $products = array_values($productsById);
+$productCount = count($products);
 $modalProducts = [];
 
 foreach ($_SESSION['cart'] ?? [] as $productId => $quantity) {
@@ -244,7 +252,7 @@ foreach ($products as $product) {
                     </div>
                 </article>
 
-                <div class="<?= e(productDividerClasses($index + 1)); ?>" aria-hidden="true"></div>
+                <div class="<?= e(productDividerClasses($index + 1, $productCount)); ?>" aria-hidden="true"></div>
             <?php endforeach; ?>
         </section>
 

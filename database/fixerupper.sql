@@ -12,12 +12,21 @@ CREATE TABLE IF NOT EXISTS users (
     username VARCHAR(50) NOT NULL,
     email VARCHAR(100) NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
+    role ENUM('user', 'admin') NOT NULL DEFAULT 'user',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
     UNIQUE KEY uq_users_username (username),
     UNIQUE KEY uq_users_email (email)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Seed the desktop admin account used by the local inventory application.
+INSERT INTO users (username, email, password_hash, role) VALUES
+    ('admin', 'quazarmovies@gmail.com', 'sha256$8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918', 'admin')
+ON DUPLICATE KEY UPDATE
+    email = VALUES(email),
+    password_hash = VALUES(password_hash),
+    role = VALUES(role);
 
 -- Products are the main storefront items shown on index.php and cart.php.
 CREATE TABLE IF NOT EXISTS products (

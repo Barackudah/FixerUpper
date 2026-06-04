@@ -44,8 +44,9 @@ without editing SQL manually.
 - Inventory save flow with edited-field highlighting and system messages.
 - Cart quantity limits based on available inventory.
 - Animated advertising logo strip.
-- Python desktop product creator for adding new products, inventory, images and
-  modal specs.
+- Python desktop admin app with login, product creation, editing, duplication,
+  soft-delete actions, inventory fields, image registration and modal specs.
+- Windows launcher for opening the desktop app from the `tools` directory.
 
 ## Technology Stack
 
@@ -67,7 +68,9 @@ The database schema is stored in `database/fixerupper.sql`.
 - `product_images` stores ordered modal/gallery images.
 - `product_specs` stores labelled modal details such as Processor, Graphics,
   Memory and Storage.
-- `users`, `orders` and `order_items` are prepared for future checkout work.
+- `users` stores login credentials and the `user`/`admin` role used by the
+  desktop app.
+- `orders` and `order_items` are prepared for future checkout work.
 
 The seeded database creates six active PC products with inventory, one image per
 product and modal specification rows. The SQL seed is idempotent, so it can be
@@ -99,10 +102,30 @@ cd C:\xampp\htdocs\fixerupper
 python tools\fixerupper_inventory_desktop.py
 ```
 
+Or launch it with the Windows launcher:
+
+```powershell
+.\tools\launch_inventory_desktop.bat
+```
+
 Use the database health check before launching the UI:
 
 ```powershell
 python tools\fixerupper_inventory_desktop.py --check-db
+```
+
+The same check can be run through the launcher:
+
+```powershell
+.\tools\launch_inventory_desktop.bat --check-db
+```
+
+The desktop app requires an admin login. The seeded local admin account is:
+
+```text
+username: admin
+password: admin
+email: quazarmovies@gmail.com
 ```
 
 The tool creates a full storefront product in one transaction:
@@ -115,6 +138,10 @@ The tool creates a full storefront product in one transaction:
 If an image is selected from outside the project, the tool copies it into
 `assets/images` and stores the site-relative path in MySQL. Existing assets are
 not overwritten; the app appends a numeric suffix when a filename already exists.
+
+Double-click a product row to open inline actions. The expanded row shows
+`DUPLICATE`, `EDIT` and `DELETE` buttons with matching icons; clicking another
+product row closes the action panel and selects that product.
 
 ### Desktop App Configuration
 
@@ -150,12 +177,18 @@ fixerupper/
 ├── assets/
 │   ├── css/style.css
 │   ├── images/
+│   │   ├── clone.png
+│   │   ├── pencil.png
+│   │   ├── refresh_icon.png
+│   │   └── trash.png
 │   └── js/
 ├── database/fixerupper.sql
 ├── docs/
 │   ├── screenshots/
 │   └── fixerupper-documentation.html
-├── tools/fixerupper_inventory_desktop.py
+├── tools/
+│   ├── fixerupper_inventory_desktop.py
+│   └── launch_inventory_desktop.bat
 ├── index.php
 ├── cart.php
 ├── inventory.php
