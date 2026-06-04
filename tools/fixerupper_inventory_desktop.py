@@ -59,6 +59,7 @@ HEADER_TEXT_PAD_X = 10
 REFRESH_ICON_SIZE = 50
 ACTION_ICON_SIZE = 25
 ICON_TEXT_GAP = 6
+PRODUCT_ACTION_BUTTON_GAP = 14
 PRODUCT_TABLE_COLUMNS = ("id", "slug", "name", "price", "stock", "location")
 PRODUCT_NUMERIC_COLUMNS = {"id", "price", "stock"}
 PRODUCT_TABLE_MAX_VISIBLE_ROWS = 20
@@ -154,7 +155,7 @@ COLORS = {
     "accent": "#7eff00",
     "accent_soft": "#95ff38",
     "action_green": "#3d5f23",
-    "action_text": "#333333",
+    "action_text": "#1f1f1f",
     "accent_deep": "#274400",
     "danger": "#ff8d8d",
     "warning": "#ffae42",
@@ -1453,14 +1454,14 @@ class InventoryDesktopApp(tk.Tk):
             brand_block,
             text="FIXERUPPER",
             bg=COLORS["bg"],
-            fg=COLORS["accent"],
+            fg=COLORS["text"],
             font=("Teko", 28, "bold"),
         ).grid(row=0, column=0, sticky="w")
         tk.Label(
             brand_block,
-            text="DESKTOP PRODUCT CREATOR",
+            text="INVENTORY MANAGER",
             bg=COLORS["bg"],
-            fg=COLORS["muted"],
+            fg=COLORS["text"],
             font=("Montserrat", 8, "bold"),
         ).grid(row=1, column=0, sticky="w")
 
@@ -1927,11 +1928,11 @@ class InventoryDesktopApp(tk.Tk):
 
         self._product_action_button(actions, "DUPLICATE", CLONE_ICON_PATH, self._duplicate_expanded_product, background).pack(
             side="left",
-            padx=self._pad((0, 6)),
+            padx=self._pad((0, PRODUCT_ACTION_BUTTON_GAP)),
         )
         self._product_action_button(actions, "EDIT", PENCIL_ICON_PATH, self._edit_expanded_product, background).pack(
             side="left",
-            padx=self._pad((0, 6)),
+            padx=self._pad((0, PRODUCT_ACTION_BUTTON_GAP)),
         )
         self._product_action_button(actions, "DELETE", TRASH_ICON_PATH, self._delete_expanded_product, background).pack(
             side="left",
