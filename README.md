@@ -24,6 +24,10 @@ without editing SQL manually.
 
 ![FixerUpper shopping cart](assets/images/shopping-cart-screenshot.png)
 
+### Desktop Admin Tool
+
+![FixerUpper desktop admin tool](assets/images/fixerupper_desktop_app.png)
+
 ### Mobile Views
 
 | Homepage | Product Modal | Cart |
@@ -44,6 +48,7 @@ without editing SQL manually.
 - Inventory save flow with edited-field highlighting and system messages.
 - Cart quantity limits based on available inventory.
 - Animated advertising logo strip.
+- Homepage showcase for the Python desktop admin tool.
 - Python desktop admin app with login, product creation, editing, duplication,
   soft-delete actions, inventory fields, image registration and modal specs.
 - Windows launcher for opening the desktop app from the `tools` directory.
@@ -174,26 +179,28 @@ Optional environment variables:
 
 ```text
 fixerupper/
-├── assets/
-│   ├── css/style.css
-│   ├── images/
-│   │   ├── clone.png
-│   │   ├── pencil.png
-│   │   ├── refresh_icon.png
-│   │   └── trash.png
-│   └── js/
-├── database/fixerupper.sql
-├── docs/
-│   ├── screenshots/
-│   └── fixerupper-documentation.html
-├── tools/
-│   ├── fixerupper_inventory_desktop.py
-│   └── launch_inventory_desktop.bat
-├── index.php
-├── cart.php
-├── inventory.php
-├── add_to_cart.php
-└── update_cart.php
+|-- assets/
+|   |-- css/style.css
+|   |-- images/
+|   |   |-- fixerupper_desktop_app.png
+|   |   |-- homepage-screenshot.png
+|   |   |-- more-info-screenshot.png
+|   |   `-- shopping-cart-screenshot.png
+|   `-- js/
+|-- database/fixerupper.sql
+|-- docs/
+|   |-- screenshots/
+|   |-- fixerupper-documentation.html
+|   |-- Petkevics_Jurijs_2409-125534_2425_COMP_PFD200_Pratical-Sem2.docx
+|   `-- Petkevics_Jurijs_2409-125534_2425_COMP_PFD200_Pratical-Sem2.pdf
+|-- tools/
+|   |-- fixerupper_inventory_desktop.py
+|   `-- launch_inventory_desktop.bat
+|-- index.php
+|-- cart.php
+|-- inventory.php
+|-- add_to_cart.php
+`-- update_cart.php
 ```
 
 ## Troubleshooting

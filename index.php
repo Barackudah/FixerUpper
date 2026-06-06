@@ -256,6 +256,16 @@ foreach ($products as $product) {
             <?php endforeach; ?>
         </section>
 
+        <section class="desktop-app-showcase" id="about" aria-label="FixerUpper desktop administration tool">
+            <div class="desktop-app-copy">
+                <h2>Desktop Admin Tool</h2>
+                <p>Python, Tkinter and MySQL product management for the FixerUpper storefront.</p>
+            </div>
+            <div class="desktop-app-frame">
+                <img src="assets/images/fixerupper_desktop_app.png" alt="FixerUpper Inventory Desktop application">
+            </div>
+        </section>
+
         <!--
             Advertising carousel with partner logos.
             It contains a viewport with edge fading and a moving ad-track inside.
