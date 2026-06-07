@@ -1762,6 +1762,7 @@ nav::after {
 .inventory-database-row {
     position: relative;
     z-index: 1;
+    isolation: isolate;
     display: grid;
     grid-template-columns: minmax(0, 1fr);
     padding: 0;
@@ -1771,12 +1772,32 @@ nav::after {
     margin-top: 0;
 }
 
+.inventory-database-row::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 22px;
+    bottom: 0;
+    left: 22px;
+    z-index: 0;
+    background: linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0) 0%,
+        rgba(255, 255, 255, 0.035) 36%,
+        rgba(255, 255, 255, 0.035) 100%
+    );
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.28s ease;
+}
+
 .inventory-database-row::after {
     content: "";
     position: absolute;
     right: 22px;
     bottom: 0;
     left: 22px;
+    z-index: 2;
     height: 2px;
     background:
         repeating-linear-gradient(
@@ -1791,12 +1812,14 @@ nav::after {
         ) 0 1px / 100% 1px no-repeat;
 }
 
-.inventory-database-row.is-selected {
-    background: rgba(255, 255, 255, 0.035);
+.inventory-database-row.is-selected::before {
+    opacity: 1;
 }
 
-.inventory-database-row:not(.is-selected) .inventory-database-actions {
-    display: none;
+.inventory-database-main,
+.inventory-database-actions {
+    position: relative;
+    z-index: 1;
 }
 
 .inventory-database-main {
@@ -1912,8 +1935,37 @@ nav::after {
     gap: 6px;
     justify-content: center;
     width: 100%;
+    max-height: 0;
     margin: 0 auto;
-    padding: 0 0 10px;
+    overflow: hidden;
+    padding: 0;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(8px);
+    visibility: hidden;
+    transition:
+        max-height 0.28s ease,
+        padding-bottom 0.28s ease,
+        opacity 0.22s ease,
+        transform 0.28s cubic-bezier(0.34, 0.78, 0.28, 1),
+        visibility 0s linear 0.28s;
+}
+
+.inventory-database-row.is-selected .inventory-database-actions {
+    max-height: 44px;
+    padding-bottom: 10px;
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+    visibility: visible;
+    transition-delay: 0s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .inventory-database-row::before,
+    .inventory-database-actions {
+        transition-duration: 0.01ms;
+    }
 }
 
 .inventory-database-actions .inventory-modal-mini-button {
