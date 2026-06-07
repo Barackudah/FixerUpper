@@ -24,6 +24,12 @@ without editing SQL manually.
 
 ![FixerUpper shopping cart](assets/images/shopping-cart-screenshot.png)
 
+### Inventory Product Modal
+
+| Desktop | iPad Pro | Tablet | Phone |
+| --- | --- | --- | --- |
+| ![Inventory product modal on desktop](assets/images/inventory-modal-desktop.png) | ![Inventory product modal on iPad Pro](assets/images/inventory-modal-ipad-pro.png) | ![Inventory product modal on tablet](assets/images/inventory-modal-tablet.png) | ![Inventory product modal on phone](assets/images/inventory-modal-mobile.png) |
+
 ### Desktop Admin Tool
 
 ![FixerUpper desktop admin tool](assets/images/fixerupper_desktop_app.png)
@@ -45,10 +51,13 @@ without editing SQL manually.
 - Quantity controls with direct numeric input, plus/minus buttons and remove
   confirmation.
 - Inventory page for stock quantity, product location and supplier notes.
+- Inventory product modal with a live product database, create/edit/duplicate
+  actions, soft delete, image selection, spec rows and responsive layouts.
+- Live product search, refresh, row expansion and compact row actions inside the
+  web inventory modal.
 - Inventory save flow with edited-field highlighting and system messages.
 - Cart quantity limits based on available inventory.
 - Animated advertising logo strip.
-- Homepage showcase for the Python desktop admin tool.
 - Python desktop admin app with login, product creation, editing, duplication,
   soft-delete actions, inventory fields, image registration and modal specs.
 - Windows launcher for opening the desktop app from the `tools` directory.
@@ -184,6 +193,10 @@ fixerupper/
 |   |-- images/
 |   |   |-- fixerupper_desktop_app.png
 |   |   |-- homepage-screenshot.png
+|   |   |-- inventory-modal-desktop.png
+|   |   |-- inventory-modal-ipad-pro.png
+|   |   |-- inventory-modal-tablet.png
+|   |   |-- inventory-modal-mobile.png
 |   |   |-- more-info-screenshot.png
 |   |   `-- shopping-cart-screenshot.png
 |   `-- js/
