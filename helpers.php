@@ -5,16 +5,51 @@ function e($value)
     return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
 }
 
+function preparedPlaceholders($values)
+{
+    return implode(',', array_fill(0, count($values), '?'));
+}
+
+function executePreparedStatement($conn, $sql, $types = '', array $params = [])
+{
+    $stmt = $conn->prepare($sql);
+
+    if ($types !== '') {
+        $refs = [];
+
+        foreach ($params as $key => &$value) {
+            $refs[$key] = &$value;
+        }
+
+        unset($value);
+        $stmt->bind_param($types, ...$refs);
+    }
+
+    $stmt->execute();
+
+    return $stmt;
+}
+
 // Product cards use whole-pound prices, while the cart page keeps pennies.
 function productPrice($price)
 {
     return '&pound; ' . number_format((float) $price, 0, '.', '');
 }
 
+function productPriceText($price)
+{
+    return html_entity_decode(productPrice($price), ENT_QUOTES, 'UTF-8');
+}
+
 // Format cart totals with pennies because the cart shows line-item prices.
 function cartPrice($price)
 {
     return '&pound; ' . number_format((float) $price, 2, ',', ' ');
+}
+
+function cartPriceText($price)
+{
+    return html_entity_decode(cartPrice($price), ENT_QUOTES, 'UTF-8');
 }
 
 // Count unique products with positive quantities for the navigation badge.
@@ -146,17 +181,22 @@ function mergeGuestCartIntoUserCart($conn, $userId)
     $stockByProduct = [];
 
     if ($productIds) {
-        $idList = implode(',', array_map('intval', $productIds));
-        $productResult = $conn->query(
+        $productIds = array_map('intval', $productIds);
+        $productStmt = executePreparedStatement(
+            $conn,
             "SELECT
                 p.id,
                 COALESCE(i.stock_quantity, 0) AS stock_quantity
              FROM products p
              LEFT JOIN product_inventory i ON i.product_id = p.id
-             WHERE p.is_active = 1 AND p.id IN ($idList)"
+             WHERE p.is_active = 1 AND p.id IN (" . preparedPlaceholders($productIds) . ")",
+            str_repeat('i', count($productIds)),
+            $productIds
         );
+        $productResult = $productStmt->get_result();
 
         if (!$productResult) {
+            $productStmt->close();
             $_SESSION['carts'][$userCartKey] = $userCart;
             return;
         }
@@ -164,6 +204,8 @@ function mergeGuestCartIntoUserCart($conn, $userId)
         while ($product = $productResult->fetch_assoc()) {
             $stockByProduct[(int) $product['id']] = (int) $product['stock_quantity'];
         }
+
+        $productStmt->close();
     }
 
     foreach ($guestCart as $productId => $quantity) {

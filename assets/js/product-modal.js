@@ -23,7 +23,7 @@
     const products = window.fixerupperProducts || {
         "product-1": {
             title: "Ultra Threadripper Pro Gaming PC",
-            price: "&pound; 3100",
+            price: "\u00a3 3100",
             image: "assets/images/pc_1.png",
             details: [
                 ["Operating System", "Windows 11 Pro Workstations (64-bit Edition)"],
@@ -43,7 +43,7 @@
         },
         "product-2": {
             title: "Intel Ultra 9 Z890 PC Builder",
-            price: "&pound; 1900",
+            price: "\u00a3 1900",
             image: "assets/images/pc_2.png",
             details: [
                 ["Operating System", "Windows 11 Pro"],
@@ -57,7 +57,7 @@
         },
         "product-3": {
             title: "AMD 7000-Series Ryzen 9 Custom",
-            price: "&pound; 2100",
+            price: "\u00a3 2100",
             image: "assets/images/pc_3.png",
             details: [
                 ["Operating System", "Windows 11 Home"],
@@ -71,7 +71,7 @@
         },
         "product-4": {
             title: "Ryzen 7 RTX Gaming PC",
-            price: "&pound; 1600",
+            price: "\u00a3 1600",
             image: "assets/images/pc_4.png",
             details: [
                 ["Operating System", "Windows 11 Home"],
@@ -85,7 +85,7 @@
         },
         "product-5": {
             title: "Intel Core i7 Gaming PC",
-            price: "&pound; 1750",
+            price: "\u00a3 1750",
             image: "assets/images/pc_5.png",
             details: [
                 ["Operating System", "Windows 11 Home"],
@@ -99,7 +99,7 @@
         },
         "product-6": {
             title: "Ryzen 9 Workstation PC",
-            price: "&pound; 2400",
+            price: "\u00a3 2400",
             image: "assets/images/pc_6.png",
             details: [
                 ["Operating System", "Windows 11 Pro"],
@@ -615,7 +615,7 @@
      * index, so a click can call setSlide(index) directly.
      */
     function renderDots(slides) {
-        modalDots.innerHTML = "";
+        modalDots.textContent = "";
 
         slides.forEach((slide, index) => {
             const dot = document.createElement("button");
@@ -879,7 +879,7 @@
         }
 
         modalTitle.textContent = product.title;
-        modalPrice.innerHTML = product.price;
+        modalPrice.textContent = product.price;
         updateCartAvailability(product);
         renderDetails(product);
         renderDots(getSlides(product));

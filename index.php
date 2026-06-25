@@ -34,7 +34,8 @@ function productDividerClasses($position, $totalProducts)
 $productsById = [];
 
 // Load the main product records first; related images and specs are attached below.
-$productResult = $conn->query(
+$productStmt = executePreparedStatement(
+    $conn,
     "SELECT
         p.id,
         p.slug,
@@ -48,6 +49,7 @@ $productResult = $conn->query(
      WHERE p.is_active = 1
      ORDER BY p.id"
 );
+$productResult = $productStmt->get_result();
 
 while ($product = $productResult->fetch_assoc()) {
     $product['specs'] = [];
@@ -55,35 +57,49 @@ while ($product = $productResult->fetch_assoc()) {
     $productsById[(int) $product['id']] = $product;
 }
 
+$productStmt->close();
 $productIds = array_keys($productsById);
 
 // Fetch related product media and specification rows in two batch queries.
 if ($productIds) {
-    $idList = implode(',', $productIds);
+    $productIds = array_map('intval', $productIds);
+    $idPlaceholders = preparedPlaceholders($productIds);
 
-    $imageResult = $conn->query(
+    $imageStmt = executePreparedStatement(
+        $conn,
         "SELECT product_id, image_path, alt_text
          FROM product_images
-         WHERE product_id IN ($idList)
-         ORDER BY product_id, sort_order, id"
+         WHERE product_id IN ($idPlaceholders)
+         ORDER BY product_id, sort_order, id",
+        str_repeat('i', count($productIds)),
+        $productIds
     );
+    $imageResult = $imageStmt->get_result();
 
     while ($image = $imageResult->fetch_assoc()) {
         $productId = (int) $image['product_id'];
         $productsById[$productId]['images'][] = $image;
     }
 
-    $specResult = $conn->query(
+    $imageStmt->close();
+
+    $specStmt = executePreparedStatement(
+        $conn,
         "SELECT product_id, label, value
          FROM product_specs
-         WHERE product_id IN ($idList)
-         ORDER BY product_id, sort_order, id"
+         WHERE product_id IN ($idPlaceholders)
+         ORDER BY product_id, sort_order, id",
+        str_repeat('i', count($productIds)),
+        $productIds
     );
+    $specResult = $specStmt->get_result();
 
     while ($spec = $specResult->fetch_assoc()) {
         $productId = (int) $spec['product_id'];
         $productsById[$productId]['specs'][] = $spec;
     }
+
+    $specStmt->close();
 }
 
 // Re-index products for rendering while keeping a slug-keyed map for the modal script.
@@ -161,7 +177,7 @@ foreach ($products as $product) {
         'id' => $productId,
         'slug' => $product['slug'],
         'title' => $product['name'],
-        'price' => productPrice($product['price']),
+        'price' => productPriceText($product['price']),
         'image' => $product['main_image'],
         'images' => $images,
         'details' => $details,

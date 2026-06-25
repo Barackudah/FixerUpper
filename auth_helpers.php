@@ -2,7 +2,7 @@
 
 function checkoutPasswordHash($password)
 {
-    return 'sha256$' . hash('sha256', (string) $password);
+    return password_hash((string) $password, PASSWORD_DEFAULT);
 }
 
 function checkoutVerifyPassword($password, $storedHash)
@@ -10,15 +10,58 @@ function checkoutVerifyPassword($password, $storedHash)
     $storedHash = (string) $storedHash;
 
     if (strpos($storedHash, 'sha256$') === 0) {
-        return hash_equals(checkoutPasswordHash($password), $storedHash);
+        return hash_equals('sha256$' . hash('sha256', (string) $password), $storedHash);
     }
 
     return password_verify((string) $password, $storedHash);
 }
 
+function checkoutPasswordNeedsRehash($storedHash)
+{
+    $storedHash = (string) $storedHash;
+
+    if (strpos($storedHash, 'sha256$') === 0) {
+        return true;
+    }
+
+    return password_needs_rehash($storedHash, PASSWORD_DEFAULT);
+}
+
+function checkoutRehashUserPassword($conn, $userId, $password)
+{
+    $userId = (int) $userId;
+
+    if ($userId < 1) {
+        return;
+    }
+
+    $passwordHash = checkoutPasswordHash($password);
+    $stmt = $conn->prepare('UPDATE users SET password_hash = ? WHERE id = ?');
+    $stmt->bind_param('si', $passwordHash, $userId);
+    $stmt->execute();
+    $stmt->close();
+}
+
+function checkoutUsernameIsValid($username)
+{
+    return preg_match('/\A[a-zA-Z0-9._-]{3,50}\z/', (string) $username) === 1;
+}
+
+function checkoutEmailIsValid($email)
+{
+    return filter_var((string) $email, FILTER_VALIDATE_EMAIL) !== false;
+}
+
+function checkoutPasswordIsValid($password)
+{
+    $length = strlen((string) $password);
+
+    return $length >= 5 && $length <= 255;
+}
+
 function ensureCheckoutUsersTable($conn)
 {
-    $conn->query(
+    $stmt = $conn->prepare(
         "CREATE TABLE IF NOT EXISTS users (
             id INT UNSIGNED NOT NULL AUTO_INCREMENT,
             username VARCHAR(50) NOT NULL,
@@ -32,23 +75,38 @@ function ensureCheckoutUsersTable($conn)
             UNIQUE KEY uq_users_email (email)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
     );
+    $stmt->execute();
+    $stmt->close();
 }
 
 function ensureCheckoutAdmin($conn)
 {
-    $adminHash = checkoutPasswordHash('admin');
+    $adminUsername = 'admin';
+    $adminPassword = getenv('FIXERUPPER_ADMIN_PASSWORD') ?: 'admin';
+    $adminRole = 'admin';
     $adminId = 0;
-    $stmt = $conn->prepare("SELECT id FROM users WHERE username = 'admin' LIMIT 1");
+    $adminStoredHash = '';
+    $adminStoredRole = '';
+    $stmt = $conn->prepare('SELECT id, password_hash, role FROM users WHERE username = ? LIMIT 1');
+    $stmt->bind_param('s', $adminUsername);
     $stmt->execute();
-    $stmt->bind_result($adminId);
+    $stmt->bind_result($adminId, $adminStoredHash, $adminStoredRole);
     $hasAdmin = $stmt->fetch();
     $stmt->close();
 
     if ($hasAdmin) {
-        $stmt = $conn->prepare("UPDATE users SET password_hash = ?, role = 'admin' WHERE id = ?");
-        $stmt->bind_param('si', $adminHash, $adminId);
-        $stmt->execute();
-        $stmt->close();
+        if (
+            !checkoutVerifyPassword($adminPassword, $adminStoredHash)
+            || checkoutPasswordNeedsRehash($adminStoredHash)
+            || $adminStoredRole !== $adminRole
+        ) {
+            $adminHash = checkoutPasswordHash($adminPassword);
+            $stmt = $conn->prepare('UPDATE users SET password_hash = ?, role = ? WHERE id = ?');
+            $stmt->bind_param('ssi', $adminHash, $adminRole, $adminId);
+            $stmt->execute();
+            $stmt->close();
+        }
+
         return;
     }
 
@@ -63,8 +121,9 @@ function ensureCheckoutAdmin($conn)
     }
 
     $stmt->close();
-    $stmt = $conn->prepare("INSERT INTO users (username, email, password_hash, role) VALUES ('admin', ?, ?, 'admin')");
-    $stmt->bind_param('ss', $adminEmail, $adminHash);
+    $adminHash = checkoutPasswordHash($adminPassword);
+    $stmt = $conn->prepare('INSERT INTO users (username, email, password_hash, role) VALUES (?, ?, ?, ?)');
+    $stmt->bind_param('ssss', $adminUsername, $adminEmail, $adminHash, $adminRole);
     $stmt->execute();
     $stmt->close();
 }
@@ -88,6 +147,12 @@ function checkoutFindUserByIdentifier($conn, $identifier)
 
 function checkoutSetUserSession($user)
 {
+    if (function_exists('fixerupperRegenerateSessionId')) {
+        fixerupperRegenerateSessionId();
+    } elseif (session_status() === PHP_SESSION_ACTIVE) {
+        session_regenerate_id(true);
+    }
+
     $_SESSION['checkout_user'] = [
         'id' => (int) $user['id'],
         'username' => (string) $user['username'],

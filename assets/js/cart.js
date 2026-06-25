@@ -419,7 +419,7 @@
         }
 
         if (lineTotalTarget && result.formatted_line_total) {
-            lineTotalTarget.innerHTML = result.formatted_line_total;
+            lineTotalTarget.textContent = result.formatted_line_total;
         }
 
         if (Number.isFinite(Number(result.stock_quantity))) {

@@ -47,6 +47,10 @@ if ($checkoutAction === 'login') {
         redirectToCheckout();
     }
 
+    if (checkoutPasswordNeedsRehash($user['password_hash'])) {
+        checkoutRehashUserPassword($conn, (int) $user['id'], $password);
+    }
+
     checkoutSetUserSession($user);
     mergeGuestCartIntoUserCart($conn, (int) $user['id']);
     unset($_SESSION['checkout_auth_flash']);
@@ -73,8 +77,18 @@ if ($checkoutAction === 'register') {
         redirectToCheckout();
     }
 
-    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+    if (!checkoutUsernameIsValid($username)) {
+        setCheckoutAuthFlash('use 3-50 letters, numbers, dots, dashes or underscores for username.', 'error', $flashValues);
+        redirectToCheckout();
+    }
+
+    if (!checkoutEmailIsValid($email)) {
         setCheckoutAuthFlash('enter a valid email.', 'error', $flashValues);
+        redirectToCheckout();
+    }
+
+    if (!checkoutPasswordIsValid($password)) {
+        setCheckoutAuthFlash('password must be at least 5 characters.', 'error', $flashValues);
         redirectToCheckout();
     }
 

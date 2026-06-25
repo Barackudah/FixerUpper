@@ -91,8 +91,9 @@ $cartItems = [];
 
 // Load only the active products that are currently present in the visitor cart.
 if ($cartQuantities) {
-    $idList = implode(',', array_keys($cartQuantities));
-    $productResult = $conn->query(
+    $productIds = array_map('intval', array_keys($cartQuantities));
+    $productStmt = executePreparedStatement(
+        $conn,
         "SELECT
             p.id,
             p.slug,
@@ -102,13 +103,18 @@ if ($cartQuantities) {
             COALESCE(i.stock_quantity, 0) AS stock_quantity
          FROM products p
          LEFT JOIN product_inventory i ON i.product_id = p.id
-         WHERE p.is_active = 1 AND p.id IN ($idList)"
+         WHERE p.is_active = 1 AND p.id IN (" . preparedPlaceholders($productIds) . ")",
+        str_repeat('i', count($productIds)),
+        $productIds
     );
+    $productResult = $productStmt->get_result();
 
     while ($product = $productResult->fetch_assoc()) {
         // Index products by id so the next loop can attach them to session quantities quickly.
         $cartProducts[(int) $product['id']] = $product;
     }
+
+    $productStmt->close();
 
     // Preserve the session cart order while attaching product data and line totals.
     foreach ($cartQuantities as $productId => $quantity) {

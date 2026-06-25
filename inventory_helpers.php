@@ -7,7 +7,7 @@ function ensureInventoryTable($conn)
         return;
     }
 
-    $conn->query(
+    $stmt = $conn->prepare(
         "CREATE TABLE IF NOT EXISTS product_inventory (
             product_id INT UNSIGNED NOT NULL,
             stock_quantity INT UNSIGNED NOT NULL DEFAULT 0,
@@ -22,8 +22,10 @@ function ensureInventoryTable($conn)
                 ON UPDATE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
     );
+    $stmt->execute();
+    $stmt->close();
 
-    $conn->query(
+    $stmt = $conn->prepare(
         "INSERT INTO product_inventory (product_id, stock_quantity, location, supplier)
          SELECT
             id,
@@ -42,6 +44,8 @@ function ensureInventoryTable($conn)
          WHERE is_active = 1
          ON DUPLICATE KEY UPDATE product_id = VALUES(product_id)"
     );
+    $stmt->execute();
+    $stmt->close();
 
     $isReady = true;
 }
@@ -106,7 +110,8 @@ function inventoryStockText($stockQuantity)
 
 function inventoryModalProducts($conn)
 {
-    $inventoryResult = $conn->query(
+    $inventoryStmt = executePreparedStatement(
+        $conn,
         "SELECT
             p.id,
             p.slug,
@@ -124,6 +129,7 @@ function inventoryModalProducts($conn)
          WHERE p.is_active = 1
          ORDER BY p.id"
     );
+    $inventoryResult = $inventoryStmt->get_result();
 
     $inventoryItems = [];
 
@@ -136,17 +142,22 @@ function inventoryModalProducts($conn)
         $inventoryItems[] = $item;
     }
 
+    $inventoryStmt->close();
     $productSpecsById = [];
     $inventoryItemIds = array_map(static fn($item) => (int) $item['id'], $inventoryItems);
 
     if ($inventoryItemIds) {
-        $idList = implode(',', array_map('intval', $inventoryItemIds));
-        $specsResult = $conn->query(
+        $inventoryItemIds = array_map('intval', $inventoryItemIds);
+        $specsStmt = executePreparedStatement(
+            $conn,
             "SELECT product_id, label, value
              FROM product_specs
-             WHERE product_id IN ($idList)
-             ORDER BY product_id, sort_order, id"
+             WHERE product_id IN (" . preparedPlaceholders($inventoryItemIds) . ")
+             ORDER BY product_id, sort_order, id",
+            str_repeat('i', count($inventoryItemIds)),
+            $inventoryItemIds
         );
+        $specsResult = $specsStmt->get_result();
 
         while ($spec = $specsResult->fetch_assoc()) {
             $productId = (int) $spec['product_id'];
@@ -156,6 +167,8 @@ function inventoryModalProducts($conn)
                 'value' => $spec['value'],
             ];
         }
+
+        $specsStmt->close();
     }
 
     $modalProducts = [];

@@ -55,6 +55,9 @@ without editing SQL manually.
   actions, soft delete, image selection, spec rows and responsive layouts.
 - Live product search, refresh, row expansion and compact row actions inside the
   web inventory modal.
+- Checkout sign-in and create-account modal backed by the PHP users table.
+- User-specific session carts, with guest cart items merged after sign in.
+- Admin-only `MANAGE` navigation action that opens the inventory product modal.
 - Inventory save flow with edited-field highlighting and system messages.
 - Cart quantity limits based on available inventory.
 - Animated advertising logo strip.
@@ -82,8 +85,8 @@ The database schema is stored in `database/fixerupper.sql`.
 - `product_images` stores ordered modal/gallery images.
 - `product_specs` stores labelled modal details such as Processor, Graphics,
   Memory and Storage.
-- `users` stores login credentials and the `user`/`admin` role used by the
-  desktop app.
+- `users` stores hashed login credentials and the `user`/`admin` role used by
+  the checkout flow, web inventory manager and desktop app.
 - `orders` and `order_items` are prepared for future checkout work.
 
 The seeded database creates six active PC products with inventory, one image per
@@ -100,6 +103,36 @@ re-imported during development without duplicating products.
 
 The PHP inventory helper also creates `product_inventory` automatically if the
 table is missing.
+
+The seeded local admin account is:
+
+```text
+username: admin
+password: admin
+```
+
+Set `FIXERUPPER_ADMIN_PASSWORD` before loading the site if you want the local
+admin seed to use a different password.
+
+## Security Controls
+
+- Passwords are stored with PHP `password_hash` and checked with
+  `password_verify`. Older local `sha256$` hashes are accepted only long enough
+  to be rehashed after a successful login.
+- Registration validates username format, email format and password length
+  before creating a user.
+- Database reads and writes that include user input or dynamic id lists use
+  prepared statements with bound parameters.
+- Sessions regenerate on login, logout and at a short interval while active.
+  Idle sessions expire after 30 minutes.
+- Session cookies are HttpOnly, SameSite=Lax and Secure when the site is served
+  over HTTPS. Non-local HTTP requests are redirected to HTTPS and HTTPS responses
+  include HSTS.
+- Sessions are tied to a browser fingerprint based on user agent, language and
+  a loose IP prefix.
+- PHP output is escaped with `htmlspecialchars`, JSON is emitted with hex flags
+  where it is embedded into HTML, and browser-side UI updates use `textContent`
+  and created DOM nodes instead of HTML string injection.
 
 ## Python Desktop Product Creator
 
@@ -134,12 +167,11 @@ The same check can be run through the launcher:
 .\tools\launch_inventory_desktop.bat --check-db
 ```
 
-The desktop app requires an admin login. The seeded local admin account is:
+The desktop app requires an admin login. The default local admin account is:
 
 ```text
 username: admin
 password: admin
-email: quazarmovies@gmail.com
 ```
 
 The tool creates a full storefront product in one transaction:

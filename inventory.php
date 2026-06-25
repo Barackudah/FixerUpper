@@ -597,7 +597,8 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     exit;
 }
 
-$inventoryResult = $conn->query(
+$inventoryStmt = executePreparedStatement(
+    $conn,
     "SELECT
         p.id,
         p.slug,
@@ -615,6 +616,7 @@ $inventoryResult = $conn->query(
      WHERE p.is_active = 1
      ORDER BY p.id"
 );
+$inventoryResult = $inventoryStmt->get_result();
 
 $inventoryItems = [];
 
@@ -627,17 +629,22 @@ while ($item = $inventoryResult->fetch_assoc()) {
     $inventoryItems[] = $item;
 }
 
+$inventoryStmt->close();
 $productSpecsById = [];
 $inventoryItemIds = array_map(static fn($item) => (int) $item['id'], $inventoryItems);
 
 if ($inventoryItemIds) {
-    $idList = implode(',', array_map('intval', $inventoryItemIds));
-    $specsResult = $conn->query(
+    $inventoryItemIds = array_map('intval', $inventoryItemIds);
+    $specsStmt = executePreparedStatement(
+        $conn,
         "SELECT product_id, label, value
          FROM product_specs
-         WHERE product_id IN ($idList)
-         ORDER BY product_id, sort_order, id"
+         WHERE product_id IN (" . preparedPlaceholders($inventoryItemIds) . ")
+         ORDER BY product_id, sort_order, id",
+        str_repeat('i', count($inventoryItemIds)),
+        $inventoryItemIds
     );
+    $specsResult = $specsStmt->get_result();
 
     while ($spec = $specsResult->fetch_assoc()) {
         $productId = (int) $spec['product_id'];
@@ -647,6 +654,8 @@ if ($inventoryItemIds) {
             'value' => $spec['value'],
         ];
     }
+
+    $specsStmt->close();
 }
 
 $modalProducts = [];

@@ -112,7 +112,7 @@ if ($quantity > $availableStock) {
         'quantity' => $currentQuantity,
         'cart_count' => cartCount(),
         'stock_quantity' => $availableStock,
-        'formatted_line_total' => cartPrice($lineTotal),
+        'formatted_line_total' => cartPriceText($lineTotal),
     ]);
     exit;
 }
@@ -129,5 +129,5 @@ echo json_encode([
     'quantity' => $quantity,
     'cart_count' => cartCount(),
     'stock_quantity' => $availableStock,
-    'formatted_line_total' => cartPrice($lineTotal),
+    'formatted_line_total' => cartPriceText($lineTotal),
 ]);
