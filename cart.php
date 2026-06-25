@@ -107,7 +107,6 @@ $updateCartEndpoint = ($basePath === '' ? '' : $basePath) . '/update_cart.php';
         <div class="nav-menu">
             <a href="index.php">HOME</a>
             <a href="index.php#about">ABOUT US</a>
-            <a href="inventory.php">INVENTORY</a>
             <a href="index.php#contacts">CONTACTS</a>
         </div>
 
@@ -197,17 +196,20 @@ $updateCartEndpoint = ($basePath === '' ? '' : $basePath) . '/update_cart.php';
                             <div class="cart-line-total" data-cart-line-total><?= cartPrice($item['line_total']); ?></div>
                         </article>
                     <?php endforeach; ?>
+
+                    <div class="cart-checkout-summary">
+                        <button class="cart-checkout-button" type="button">PROCEED TO CHECKOUT</button>
+                    </div>
                 </div>
             <?php endif; ?>
         </section>
 
         <div class="products-dots cart-ad-divider" aria-hidden="true"></div>
 
-        <!-- Advertising carousel duplicated exactly like the homepage for continuous logo scrolling. -->
+        <!-- Advertising carousel mirrors the homepage logo strip. -->
         <section class="advertising-block" aria-label="Advertising banners">
             <div class="ad-viewport">
                 <div class="ad-track">
-                    <!-- First logo set. -->
                     <div class="ad-set">
                         <div class="ad-banner">
                             <a href="https://www.amd.com/" target="_blank" rel="noopener noreferrer" aria-label="AMD official website">
@@ -245,7 +247,6 @@ $updateCartEndpoint = ($basePath === '' ? '' : $basePath) . '/update_cart.php';
                             </a>
                         </div>
                     </div>
-                    <!-- Duplicate logo set; CSS moves the track by half its width for a seamless loop. -->
                     <div class="ad-set">
                         <div class="ad-banner">
                             <a href="https://www.amd.com/" target="_blank" rel="noopener noreferrer" aria-label="AMD official website">

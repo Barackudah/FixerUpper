@@ -675,7 +675,6 @@ unset($_SESSION['inventory_edit_product_id']);
         <div class="nav-menu">
             <a href="index.php">HOME</a>
             <a href="index.php#about">ABOUT US</a>
-            <a href="inventory.php" aria-current="page">INVENTORY</a>
             <a href="index.php#contacts">CONTACTS</a>
         </div>
 

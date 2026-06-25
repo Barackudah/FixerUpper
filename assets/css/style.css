@@ -710,17 +710,11 @@ nav::after {
     padding: 0;
 }
 
-/* Cart keeps the same dotted divider before advertising as the homepage. */
+/* Cart divider sits between checkout controls and the restored advertising carousel. */
 .cart-ad-divider {
     display: block;
-}
-
-.cart-body--filled .cart-ad-divider {
-    display: none;
-}
-
-.cart-body--filled .advertising-block {
     margin-top: 0;
+    margin-bottom: var(--card-gap);
 }
 
 /*
@@ -1247,6 +1241,54 @@ nav::after {
     font-weight: 400;
     line-height: 1;
     white-space: nowrap;
+}
+
+/* Checkout placeholder mirrors the soft horizontal glow used by the advertising strip. */
+.cart-checkout-summary {
+    position: relative;
+    display: flex;
+    grid-column: 1 / -1;
+    align-items: center;
+    justify-content: center;
+    min-height: 128px;
+    margin-top: 0;
+    padding: 20px var(--cart-edge-gap);
+    overflow: hidden;
+    background: linear-gradient(
+        90deg,
+        rgba(51, 51, 51, 0) 0%,
+        rgba(49, 49, 49, 0.46) 24%,
+        rgba(41, 41, 41, 0.86) 50%,
+        rgba(49, 49, 49, 0.46) 76%,
+        rgba(51, 51, 51, 0) 100%
+    );
+}
+
+.cart-checkout-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    max-width: 100%;
+    border: 0;
+    padding: 0;
+    color: #6b6b6b;
+    background: transparent;
+    -webkit-appearance: none;
+    appearance: none;
+    cursor: pointer;
+    font-family: 'Montserrat', sans-serif;
+    font-size: clamp(11px, 1.5vw, 17px);
+    font-weight: 700;
+    line-height: 1;
+    text-align: center;
+    text-shadow: 0 1px 0 rgba(0, 0, 0, 0.52);
+    text-transform: uppercase;
+    transition: transform 0.18s ease;
+}
+
+.cart-checkout-button:hover,
+.cart-checkout-button:focus-visible {
+    transform: translateY(-1px);
 }
 
 /* Slightly fade a row while an AJAX update is in progress. */
@@ -3146,11 +3188,10 @@ nav::after {
         margin-top: 0;
     }
 
-    /* Cart uses a standalone divider, so it needs the same final-row rhythm as the product grid. */
     .cart-ad-divider {
-        margin-top: var(--card-gap);
         margin-bottom: 0;
     }
+
 }
 
 /*
@@ -3338,6 +3379,15 @@ nav::after {
         font-size: 15.4px;
     }
 
+    .cart-checkout-summary {
+        min-height: 112px;
+        padding-block: 18px;
+    }
+
+    .cart-checkout-button {
+        width: 100%;
+    }
+
     .inventory-row {
         grid-template-rows: auto auto auto;
         min-height: 118px;
@@ -3408,8 +3458,8 @@ nav::after {
         margin-bottom: var(--card-gap);
     }
 
-    /* Keep the cart advertising divider tight to the logo strip at zoomed/narrow widths. */
     .cart-ad-divider {
+        margin-top: 0;
         margin-bottom: 0;
     }
 
@@ -3429,4 +3479,5 @@ nav::after {
     .site-footer {
         min-height: 120px;
     }
+
 }

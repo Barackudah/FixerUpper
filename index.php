@@ -188,7 +188,6 @@ foreach ($products as $product) {
         <div class="nav-menu">
             <a href="#home">HOME</a>
             <a href="#about">ABOUT US</a>
-            <a href="inventory.php">INVENTORY</a>
             <a href="#contacts">CONTACTS</a>
         </div>
 
