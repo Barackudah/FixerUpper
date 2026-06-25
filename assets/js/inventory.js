@@ -1,7 +1,7 @@
 (function () {
     const table = document.querySelector("[data-inventory-table]");
     const form = document.getElementById("inventory-form");
-    const addButton = document.querySelector("[data-inventory-add-open]");
+    const addButtons = [...document.querySelectorAll("[data-inventory-add-open]")];
     const addModal = document.getElementById("inventory-add-modal");
     const addForm = document.querySelector("[data-inventory-add-form]");
     const addNameInput = document.querySelector("[data-add-product-name]");
@@ -568,8 +568,13 @@
         lastFocusedElement = null;
     }
 
-    if (addButton && addModal) {
-        addButton.addEventListener("click", openAddModal);
+    if (addButtons.length > 0 && addModal) {
+        addButtons.forEach((addButton) => {
+            addButton.addEventListener("click", (event) => {
+                event.preventDefault();
+                openAddModal();
+            });
+        });
 
         addModal.addEventListener("click", (event) => {
             if (event.target.closest("[data-inventory-add-close]")) {

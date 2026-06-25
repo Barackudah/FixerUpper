@@ -3,15 +3,23 @@
     const table = document.querySelector("[data-cart-table]");
     const cartBadge = document.querySelector(".cart-badge");
     const cartMessage = document.querySelector("[data-cart-message]");
+    const checkoutTrigger = document.querySelector("[data-checkout-trigger]");
+    const checkoutBadge = checkoutTrigger ? checkoutTrigger.querySelector(".cart-checkout-badge") : null;
+    const checkoutRedirect = checkoutTrigger ? checkoutTrigger.dataset.checkoutRedirect || "" : "";
+    const isCheckoutAuthenticated = checkoutTrigger ? checkoutTrigger.dataset.checkoutAuthenticated === "1" : false;
+    const checkoutModal = document.getElementById("checkout-modal");
+    const checkoutModalClose = checkoutModal ? checkoutModal.querySelector("[data-checkout-modal-close]") : null;
+    const checkoutInitialField = checkoutModal ? checkoutModal.querySelector('input[name="login_identifier"]') : null;
+    const checkoutAuthMessage = checkoutModal ? checkoutModal.querySelector("[data-checkout-auth-message]") : null;
     const endpoint = window.fixerupperUpdateCartEndpoint || "update_cart.php";
     let cartMessageTimer = 0;
     let cartMessageHideTimer = 0;
     let cartMessageAnimationFrame = 0;
-
-    // If the cart is empty, the table is not rendered and there is nothing to bind.
-    if (!table) {
-        return;
-    }
+    let checkoutAnimationTimer = 0;
+    let checkoutLockedScrollY = 0;
+    let checkoutLastTouchY = 0;
+    let isCheckoutAnimating = false;
+    let isCheckoutScrollLocked = false;
 
     function getQuantityValue(quantityTarget) {
         const rawValue = "value" in quantityTarget ? quantityTarget.value : quantityTarget.textContent;
@@ -71,6 +79,258 @@
                 cartMessage.classList.remove("is-visible", "is-hiding");
             }, 3600);
         }
+    }
+
+    function shouldRestoreCheckoutFocus() {
+        return !window.matchMedia || window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+    }
+
+    function resetCheckoutTriggerState(shouldBlur) {
+        if (!checkoutTrigger) {
+            return;
+        }
+
+        window.clearTimeout(checkoutAnimationTimer);
+        checkoutTrigger.classList.remove("is-confirming");
+        checkoutTrigger.disabled = false;
+        isCheckoutAnimating = false;
+
+        if (shouldBlur) {
+            checkoutTrigger.blur();
+        }
+    }
+
+    function canScroll(element, deltaY) {
+        if (!element || element.scrollHeight <= element.clientHeight) {
+            return false;
+        }
+
+        if (deltaY > 0) {
+            return element.scrollTop > 0;
+        }
+
+        if (deltaY < 0) {
+            return element.scrollTop + element.clientHeight < element.scrollHeight - 1;
+        }
+
+        return true;
+    }
+
+    function hasScrollableCheckoutParent(target, deltaY) {
+        let element = target;
+
+        while (element && element !== document.body) {
+            if (element === checkoutModal && canScroll(element, deltaY)) {
+                return true;
+            }
+
+            if (element.closest && element.closest(".checkout-modal") && canScroll(element, deltaY)) {
+                return true;
+            }
+
+            if (element === checkoutModal) {
+                break;
+            }
+
+            element = element.parentElement;
+        }
+
+        return false;
+    }
+
+    function rememberCheckoutTouchPosition(event) {
+        checkoutLastTouchY = event.touches[0].clientY;
+    }
+
+    function preventCheckoutBackgroundScroll(event) {
+        if (!checkoutModal || !checkoutModal.classList.contains("is-open")) {
+            return;
+        }
+
+        const eventTarget = event.target.closest ? event.target : event.target.parentElement;
+
+        if (!eventTarget || !eventTarget.closest(".checkout-modal")) {
+            event.preventDefault();
+            return;
+        }
+
+        const deltaY = event.type === "wheel" ? -event.deltaY : event.touches[0].clientY - checkoutLastTouchY;
+
+        if (!hasScrollableCheckoutParent(eventTarget, deltaY)) {
+            event.preventDefault();
+        }
+
+        if (event.type === "touchmove") {
+            checkoutLastTouchY = event.touches[0].clientY;
+        }
+    }
+
+    function lockCheckoutPageScroll() {
+        if (isCheckoutScrollLocked) {
+            return;
+        }
+
+        isCheckoutScrollLocked = true;
+        checkoutLockedScrollY = window.scrollY || document.documentElement.scrollTop || 0;
+        document.documentElement.classList.add("modal-open");
+        document.body.classList.add("modal-open");
+        document.addEventListener("touchstart", rememberCheckoutTouchPosition, { passive: true });
+        document.addEventListener("touchmove", preventCheckoutBackgroundScroll, { passive: false });
+        document.addEventListener("wheel", preventCheckoutBackgroundScroll, { passive: false });
+    }
+
+    function unlockCheckoutPageScroll() {
+        isCheckoutScrollLocked = false;
+        document.documentElement.classList.remove("modal-open");
+        document.body.classList.remove("modal-open");
+        document.removeEventListener("touchstart", rememberCheckoutTouchPosition);
+        document.removeEventListener("touchmove", preventCheckoutBackgroundScroll);
+        document.removeEventListener("wheel", preventCheckoutBackgroundScroll);
+        window.scrollTo(0, checkoutLockedScrollY);
+    }
+
+    function openCheckoutModal() {
+        if (!checkoutModal) {
+            return;
+        }
+
+        lockCheckoutPageScroll();
+        checkoutModal.classList.add("is-open");
+        checkoutModal.setAttribute("aria-hidden", "false");
+
+        if (shouldRestoreCheckoutFocus() && checkoutInitialField) {
+            checkoutInitialField.focus();
+        } else if (checkoutModalClose) {
+            checkoutModalClose.focus();
+        }
+    }
+
+    function closeCheckoutModal() {
+        if (!checkoutModal || !checkoutModal.classList.contains("is-open")) {
+            return;
+        }
+
+        checkoutModal.classList.remove("is-open");
+        checkoutModal.setAttribute("aria-hidden", "true");
+        unlockCheckoutPageScroll();
+        resetCheckoutTriggerState(!shouldRestoreCheckoutFocus());
+
+        if (checkoutTrigger && shouldRestoreCheckoutFocus()) {
+            checkoutTrigger.focus();
+        }
+    }
+
+    function runCheckoutAnimation() {
+        return new Promise((resolve) => {
+            if (!checkoutTrigger || !checkoutBadge) {
+                resolve();
+                return;
+            }
+
+            let isDone = false;
+            const finish = () => {
+                if (isDone) {
+                    return;
+                }
+
+                isDone = true;
+                window.clearTimeout(checkoutAnimationTimer);
+                checkoutTrigger.removeEventListener("animationend", handleAnimationEnd);
+                checkoutTrigger.classList.remove("is-confirming");
+                checkoutTrigger.disabled = false;
+                resolve();
+            };
+            const handleAnimationEnd = (event) => {
+                if (event.animationName === "checkoutBadgeConfirm" || event.animationName === "checkoutBadgeConfirmTouch") {
+                    finish();
+                }
+            };
+
+            checkoutTrigger.disabled = true;
+            checkoutTrigger.classList.remove("is-confirming");
+            void checkoutTrigger.offsetWidth;
+            checkoutTrigger.addEventListener("animationend", handleAnimationEnd);
+            checkoutTrigger.classList.add("is-confirming");
+            checkoutAnimationTimer = window.setTimeout(finish, 1750);
+        });
+    }
+
+    if (checkoutTrigger) {
+        checkoutTrigger.addEventListener("click", async () => {
+            if (isCheckoutAnimating || (checkoutModal && checkoutModal.classList.contains("is-open"))) {
+                return;
+            }
+
+            isCheckoutAnimating = true;
+            await runCheckoutAnimation();
+            isCheckoutAnimating = false;
+
+            if (isCheckoutAuthenticated && checkoutRedirect) {
+                window.location.href = checkoutRedirect;
+                return;
+            }
+
+            openCheckoutModal();
+        });
+    }
+
+    if (checkoutModal) {
+        checkoutModal.addEventListener("click", (event) => {
+            if (event.target.closest("[data-checkout-modal-close]")) {
+                closeCheckoutModal();
+            }
+        });
+
+        document.addEventListener("keydown", (event) => {
+            if (event.key === "Escape") {
+                closeCheckoutModal();
+            }
+        });
+    }
+
+    if (checkoutModal && checkoutModal.classList.contains("is-open")) {
+        lockCheckoutPageScroll();
+
+        if (shouldRestoreCheckoutFocus() && checkoutInitialField) {
+            checkoutInitialField.focus();
+        } else if (checkoutModalClose) {
+            checkoutModalClose.focus();
+        }
+    }
+
+    if (checkoutAuthMessage) {
+        const authMessageShouldRedirect = checkoutAuthMessage.dataset.tone === "success" && checkoutAuthMessage.dataset.checkoutAuthRedirect;
+
+        checkoutAuthMessage.classList.remove("is-visible", "is-hiding");
+        void checkoutAuthMessage.offsetWidth;
+
+        window.requestAnimationFrame(() => {
+            checkoutAuthMessage.classList.add("is-visible");
+        });
+
+        window.setTimeout(() => {
+            checkoutAuthMessage.classList.add("is-hiding");
+        }, 3000);
+
+        window.setTimeout(() => {
+            if (authMessageShouldRedirect) {
+                closeCheckoutModal();
+                window.location.href = checkoutAuthMessage.dataset.checkoutAuthRedirect;
+                return;
+            }
+
+            checkoutAuthMessage.textContent = "";
+            checkoutAuthMessage.classList.remove("is-visible", "is-hiding");
+            checkoutAuthMessage.hidden = true;
+        }, 3600);
+    }
+
+    window.addEventListener("pageshow", () => {
+        resetCheckoutTriggerState(!shouldRestoreCheckoutFocus());
+    });
+
+    if (!table) {
+        return;
     }
 
     table.querySelectorAll("[data-cart-quantity]").forEach((quantityTarget) => {

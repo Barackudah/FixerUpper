@@ -90,20 +90,36 @@ if ($productIds) {
 $products = array_values($productsById);
 $productCount = count($products);
 $modalProducts = [];
+$sessionCart =& currentCart();
 
-foreach ($_SESSION['cart'] ?? [] as $productId => $quantity) {
+foreach ($sessionCart as $productId => $quantity) {
     $productId = (int) $productId;
 
     if ($productId < 1 || (int) $quantity < 1 || !isset($productsById[$productId])) {
-        unset($_SESSION['cart'][$productId]);
+        unset($sessionCart[$productId]);
     }
 }
 
 // The navigation badge shows unique products and stays empty when the cart has no items.
-$cartCount = cartBadgeCount($_SESSION['cart'] ?? []);
+$cartCount = cartBadgeCount($sessionCart);
 $cartProductIds = [];
+$checkoutCurrentUser = $_SESSION['checkout_user'] ?? null;
+$checkoutIsAdmin = checkoutUserIsAdmin($checkoutCurrentUser);
+$inventoryModalProducts = [];
+$inventoryModalProductsJson = '[]';
+$inventoryFormAction = 'inventory.php';
+$inventoryReturnUrl = 'index.php';
+$modalEditProductId = 0;
 
-foreach ($_SESSION['cart'] ?? [] as $productId => $quantity) {
+if ($checkoutIsAdmin) {
+    $inventoryModalProducts = inventoryModalProducts($conn);
+    $inventoryModalProductsJson = json_encode(
+        $inventoryModalProducts,
+        JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT
+    ) ?: '[]';
+}
+
+foreach ($sessionCart as $productId => $quantity) {
     if ((int) $quantity > 0) {
         $cartProductIds[(int) $productId] = true;
     }
@@ -181,14 +197,20 @@ foreach ($products as $product) {
     <nav>
         <!-- The logo is placed in its own block so it can be aligned independently from the menu. -->
         <div class="nav-logo">
+            <?php if ($checkoutCurrentUser): ?>
+                <p class="nav-user-status">hi, <?= e($checkoutCurrentUser['username']); ?></p>
+            <?php endif; ?>
             <img src="assets/images/logo.png" alt="FIXERUPPER Logo">
         </div>
 
         <!-- The main menu uses anchor links; currently they point to future page sections. -->
         <div class="nav-menu">
             <a href="#home">HOME</a>
-            <a href="#about">ABOUT US</a>
-            <a href="#contacts">CONTACTS</a>
+            <a href="cart.php?under_construction=1">ABOUT US</a>
+            <a href="cart.php?under_construction=1">CONTACTS</a>
+            <?php if ($checkoutIsAdmin): ?>
+                <a href="#manage" data-inventory-add-open>MANAGE</a>
+            <?php endif; ?>
         </div>
 
         <!--
@@ -197,12 +219,15 @@ foreach ($products as $product) {
             helps when an image fails to load.
         -->
         <div class="nav-actions">
-            <a href="#login" title="Login">
-                <img src="assets/images/login_icon.png" alt="Login">
-            </a>
-            <a href="#logout" title="Logout">
-                <img src="assets/images/logout_icon.png" alt="Logout">
-            </a>
+            <?php if ($checkoutCurrentUser): ?>
+                <a href="logout.php" title="Logout" aria-label="Logout">
+                    <img src="assets/images/logout_icon.png" alt="Logout">
+                </a>
+            <?php else: ?>
+                <a href="cart.php?checkout=1" title="Login" aria-label="Login">
+                    <img src="assets/images/login_icon.png" alt="Login">
+                </a>
+            <?php endif; ?>
             <a href="cart.php" title="Shopping Cart">
                 <img src="assets/images/shoppingcard_icon.png" alt="Cart">
                 <!-- The cart counter is placed over the icon using absolute positioning in CSS. -->
@@ -356,6 +381,10 @@ foreach ($products as $product) {
         </footer>
     </main>
 
+    <?php if ($checkoutIsAdmin): ?>
+        <?php include __DIR__ . '/partials/inventory_add_modal.php'; ?>
+    <?php endif; ?>
+
     <div class="product-modal" id="product-modal" aria-hidden="true">
         <div class="product-modal__backdrop" data-modal-close></div>
         <section class="product-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="modal-product-title">
@@ -393,6 +422,13 @@ foreach ($products as $product) {
         window.fixerupperCartEndpoint = "<?= e($cartEndpoint); ?>";
         window.fixerupperProducts = <?= json_encode($modalProducts, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
     </script>
+    <?php if ($checkoutIsAdmin): ?>
+        <script>
+            window.fixerUpperInventoryProducts = <?= $inventoryModalProductsJson; ?>;
+            window.fixerUpperInventoryEditProductId = <?= (int) $modalEditProductId; ?>;
+        </script>
+        <script src="assets/js/inventory.js?v=<?= filemtime(__DIR__ . '/assets/js/inventory.js'); ?>"></script>
+    <?php endif; ?>
     <script src="assets/js/product-modal.js?v=<?= filemtime(__DIR__ . '/assets/js/product-modal.js'); ?>"></script>
 </body>
 </html>

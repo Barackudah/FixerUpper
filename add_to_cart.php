@@ -68,16 +68,13 @@ if (!$product) {
     exit;
 }
 
-// The cart array is created lazily so visitors without a cart keep a smaller session.
-if (!isset($_SESSION['cart'])) {
-    $_SESSION['cart'] = [];
-}
+$cart =& currentCart();
 
 // Store cart quantities by real product id so checkout can join to products directly.
 $cartProductId = (int) $product['id'];
 $availableStock = (int) $product['stock_quantity'];
 
-if (isset($_SESSION['cart'][$cartProductId]) && (int) $_SESSION['cart'][$cartProductId] > 0) {
+if (isset($cart[$cartProductId]) && (int) $cart[$cartProductId] > 0) {
     http_response_code(409);
     echo json_encode([
         'success' => false,
@@ -100,7 +97,7 @@ if ($availableStock < $quantity) {
 }
 
 // The session cart stores product ids as keys and quantities as values.
-$_SESSION['cart'][$cartProductId] = $quantity;
+$cart[$cartProductId] = $quantity;
 
 // Return the updated unique-product count so the navigation badge can refresh instantly.
 echo json_encode([

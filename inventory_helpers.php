@@ -103,3 +103,79 @@ function inventoryStockText($stockQuantity)
 
     return $stockQuantity . ' in stock';
 }
+
+function inventoryModalProducts($conn)
+{
+    $inventoryResult = $conn->query(
+        "SELECT
+            p.id,
+            p.slug,
+            p.name,
+            p.short_description,
+            p.price,
+            p.main_image,
+            p.is_active,
+            COALESCE(i.stock_quantity, 0) AS stock_quantity,
+            COALESCE(NULLIF(i.location, ''), 'Unassigned') AS location,
+            COALESCE(i.supplier, '') AS supplier,
+            i.updated_at
+         FROM products p
+         LEFT JOIN product_inventory i ON i.product_id = p.id
+         WHERE p.is_active = 1
+         ORDER BY p.id"
+    );
+
+    $inventoryItems = [];
+
+    while ($item = $inventoryResult->fetch_assoc()) {
+        $stockQuantity = (int) $item['stock_quantity'];
+        $item['stock_quantity'] = $stockQuantity;
+        $item['price'] = number_format((float) $item['price'], 2, '.', '');
+        $item['is_active'] = (int) $item['is_active'];
+
+        $inventoryItems[] = $item;
+    }
+
+    $productSpecsById = [];
+    $inventoryItemIds = array_map(static fn($item) => (int) $item['id'], $inventoryItems);
+
+    if ($inventoryItemIds) {
+        $idList = implode(',', array_map('intval', $inventoryItemIds));
+        $specsResult = $conn->query(
+            "SELECT product_id, label, value
+             FROM product_specs
+             WHERE product_id IN ($idList)
+             ORDER BY product_id, sort_order, id"
+        );
+
+        while ($spec = $specsResult->fetch_assoc()) {
+            $productId = (int) $spec['product_id'];
+            $productSpecsById[$productId] ??= [];
+            $productSpecsById[$productId][] = [
+                'label' => $spec['label'],
+                'value' => $spec['value'],
+            ];
+        }
+    }
+
+    $modalProducts = [];
+
+    foreach ($inventoryItems as $item) {
+        $productId = (int) $item['id'];
+        $modalProducts[] = [
+            'id' => $productId,
+            'slug' => $item['slug'],
+            'name' => $item['name'],
+            'short_description' => $item['short_description'],
+            'price' => $item['price'],
+            'main_image' => $item['main_image'],
+            'is_active' => (bool) $item['is_active'],
+            'stock_quantity' => max(1, min(999, (int) $item['stock_quantity'])),
+            'location' => $item['location'],
+            'supplier' => $item['supplier'],
+            'specs' => $productSpecsById[$productId] ?? [],
+        ];
+    }
+
+    return $modalProducts;
+}

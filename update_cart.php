@@ -34,6 +34,7 @@ $action = (string) ($_POST['action'] ?? 'update');
 
 // Quantity is required for updates and intentionally ignored for remove actions.
 $quantity = (int) ($_POST['quantity'] ?? 0);
+$cart =& currentCart();
 
 // Remove actions do not need a positive quantity, but quantity updates do.
 if ($productId < 1 || ($action !== 'remove' && $quantity < 1)) {
@@ -48,7 +49,7 @@ if ($productId < 1 || ($action !== 'remove' && $quantity < 1)) {
 
 // Removing only touches the session cart; the products table remains unchanged.
 if ($action === 'remove') {
-    unset($_SESSION['cart'][$productId]);
+    unset($cart[$productId]);
 
     echo json_encode([
         'success' => true,
@@ -88,7 +89,7 @@ if (!$product) {
 }
 
 // Do not create new cart rows here; adding products is handled by add_to_cart.php.
-if (!isset($_SESSION['cart'][$productId]) || (int) $_SESSION['cart'][$productId] < 1) {
+if (!isset($cart[$productId]) || (int) $cart[$productId] < 1) {
     http_response_code(404);
     echo json_encode([
         'success' => false,
@@ -101,7 +102,7 @@ if (!isset($_SESSION['cart'][$productId]) || (int) $_SESSION['cart'][$productId]
 $availableStock = (int) $product['stock_quantity'];
 
 if ($quantity > $availableStock) {
-    $currentQuantity = (int) $_SESSION['cart'][$productId];
+    $currentQuantity = (int) $cart[$productId];
     $lineTotal = (float) $product['price'] * $currentQuantity;
 
     http_response_code(409);
@@ -117,7 +118,7 @@ if ($quantity > $availableStock) {
 }
 
 // Persist the new quantity in the session and return the updated line total.
-$_SESSION['cart'][$productId] = $quantity;
+$cart[$productId] = $quantity;
 
 $unitPrice = (float) $product['price'];
 $lineTotal = $unitPrice * $quantity;

@@ -7,7 +7,45 @@ require_once __DIR__ . '/helpers.php';
 
 require_once __DIR__ . '/inventory_helpers.php';
 
+$inventoryIsEmbed = (($_GET['embed'] ?? '') === '1') || (($_POST['inventory_embed'] ?? '') === '1');
+$checkoutCurrentUser = $_SESSION['checkout_user'] ?? null;
+$checkoutIsAdmin = checkoutUserIsAdmin($checkoutCurrentUser);
+
+if (!$checkoutIsAdmin) {
+    if (($_GET['inventory_action'] ?? '') === 'product_database_json') {
+        http_response_code(403);
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode(['success' => false, 'message' => 'admin access required.']);
+        exit;
+    }
+
+    header('Location: index.php');
+    exit;
+}
+
 ensureInventoryTable($conn);
+
+function inventorySafeReturnUrl($value)
+{
+    $value = trim(str_replace('\\', '/', (string) $value));
+
+    if ($value === '' || str_contains($value, '://') || str_starts_with($value, '/') || str_starts_with($value, '//')) {
+        return '';
+    }
+
+    return preg_match('/^(index|cart)\.php(?:\?.*)?$/', $value) ? $value : '';
+}
+
+function inventoryRedirectUrl($inventoryIsEmbed)
+{
+    $returnUrl = inventorySafeReturnUrl($_POST['inventory_return'] ?? '');
+
+    if ($returnUrl !== '') {
+        return $returnUrl;
+    }
+
+    return $inventoryIsEmbed ? 'inventory.php?embed=1' : 'inventory.php';
+}
 
 function inventoryCleanOneLine($value)
 {
@@ -471,7 +509,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
             $_SESSION['inventory_notice_tone'] = 'error';
         }
 
-        header('Location: inventory.php');
+        header('Location: ' . inventoryRedirectUrl($inventoryIsEmbed));
         exit;
     }
 
@@ -488,7 +526,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
             $_SESSION['inventory_notice_tone'] = 'error';
         }
 
-        header('Location: inventory.php');
+        header('Location: ' . inventoryRedirectUrl($inventoryIsEmbed));
         exit;
     }
 
@@ -497,7 +535,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
 
         try {
             inventorySoftDeleteProduct($conn, $productId);
-            unset($_SESSION['cart'][$productId]);
+            removeProductFromAllSessionCarts($productId);
             $_SESSION['inventory_notice'] = 'product #' . $productId . ' deleted.';
             $_SESSION['inventory_notice_tone'] = 'success';
         } catch (Throwable $error) {
@@ -505,7 +543,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
             $_SESSION['inventory_notice_tone'] = 'error';
         }
 
-        header('Location: inventory.php');
+        header('Location: ' . inventoryRedirectUrl($inventoryIsEmbed));
         exit;
     }
 
@@ -537,7 +575,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
         if ($shouldRemove) {
             $removeStmt->bind_param('i', $productId);
             $removeStmt->execute();
-            unset($_SESSION['cart'][$productId]);
+            removeProductFromAllSessionCarts($productId);
             $removedCount++;
             continue;
         }
@@ -555,7 +593,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     }
 
     $_SESSION['inventory_notice'] = $removedCount > 0 ? 'inventory updated. item removed.' : 'inventory updated.';
-    header('Location: inventory.php');
+    header('Location: ' . inventoryRedirectUrl($inventoryIsEmbed));
     exit;
 }
 
@@ -647,7 +685,8 @@ if (($_GET['inventory_action'] ?? '') === 'product_database_json') {
     exit;
 }
 
-$cartCount = cartBadgeCount($_SESSION['cart'] ?? []);
+$cartCount = cartCount();
+$inventoryFormAction = inventoryRedirectUrl($inventoryIsEmbed);
 $notice = $_SESSION['inventory_notice'] ?? '';
 $noticeTone = $_SESSION['inventory_notice_tone'] ?? 'success';
 $modalEditProductId = (int) ($_SESSION['inventory_edit_product_id'] ?? 0);
@@ -664,9 +703,13 @@ unset($_SESSION['inventory_edit_product_id']);
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500&family=Teko:wght@600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/style.css?v=<?= filemtime(__DIR__ . '/assets/css/style.css'); ?>">
 </head>
-<body class="inventory-body cart-body--filled">
+<body class="inventory-body cart-body--filled<?= $inventoryIsEmbed ? ' inventory-body--embed' : ''; ?>">
+    <?php if (!$inventoryIsEmbed): ?>
     <nav>
         <div class="nav-logo">
+            <?php if ($checkoutCurrentUser): ?>
+                <p class="nav-user-status">hi, <?= e($checkoutCurrentUser['username']); ?></p>
+            <?php endif; ?>
             <a href="index.php" aria-label="FIXERUPPER home">
                 <img src="assets/images/logo.png" alt="FIXERUPPER Logo">
             </a>
@@ -674,17 +717,21 @@ unset($_SESSION['inventory_edit_product_id']);
 
         <div class="nav-menu">
             <a href="index.php">HOME</a>
-            <a href="index.php#about">ABOUT US</a>
-            <a href="index.php#contacts">CONTACTS</a>
+            <a href="cart.php?under_construction=1">ABOUT US</a>
+            <a href="cart.php?under_construction=1">CONTACTS</a>
+            <a href="#manage" data-inventory-add-open>MANAGE</a>
         </div>
 
         <div class="nav-actions">
-            <a href="#login" title="Login">
-                <img src="assets/images/login_icon.png" alt="Login">
-            </a>
-            <a href="#logout" title="Logout">
-                <img src="assets/images/logout_icon.png" alt="Logout">
-            </a>
+            <?php if ($checkoutCurrentUser): ?>
+                <a href="logout.php" title="Logout" aria-label="Logout">
+                    <img src="assets/images/logout_icon.png" alt="Logout">
+                </a>
+            <?php else: ?>
+                <a href="cart.php?checkout=1" title="Login" aria-label="Login">
+                    <img src="assets/images/login_icon.png" alt="Login">
+                </a>
+            <?php endif; ?>
             <a href="cart.php" title="Shopping Cart">
                 <img src="assets/images/shoppingcard_icon.png" alt="Cart">
                 <span class="cart-badge" aria-live="polite"><?= $cartCount > 0 ? (int) $cartCount : ''; ?></span>
@@ -694,6 +741,7 @@ unset($_SESSION['inventory_edit_product_id']);
             </a>
         </div>
     </nav>
+    <?php endif; ?>
 
     <main class="container cart-container inventory-container">
         <section class="cart-page inventory-page" aria-label="Inventory">
@@ -701,7 +749,10 @@ unset($_SESSION['inventory_edit_product_id']);
                 <p class="cart-message inventory-notice inventory-notice--<?= e($noticeTone); ?> is-visible" data-system-message role="status"><?= e($notice); ?></p>
             <?php endif; ?>
 
-            <form id="inventory-form" class="inventory-form" method="post" action="inventory.php">
+            <form id="inventory-form" class="inventory-form" method="post" action="<?= e($inventoryFormAction); ?>">
+                <?php if ($inventoryIsEmbed): ?>
+                    <input type="hidden" name="inventory_embed" value="1">
+                <?php endif; ?>
                 <div class="cart-table inventory-table" data-inventory-table>
                     <div class="cart-header inventory-header" aria-hidden="true">
                         <span class="cart-heading cart-heading--items inventory-heading--items">ITEMS</span>
@@ -766,180 +817,14 @@ unset($_SESSION['inventory_edit_product_id']);
             </form>
         </section>
 
-        <footer class="site-footer inventory-footer">
-            <p>Jurijs Petkevics &copy; 2026</p>
-        </footer>
+        <?php if (!$inventoryIsEmbed): ?>
+            <footer class="site-footer inventory-footer">
+                <p>Jurijs Petkevics &copy; 2026</p>
+            </footer>
+        <?php endif; ?>
     </main>
 
-    <div class="product-modal inventory-add-modal" id="inventory-add-modal" aria-hidden="true">
-        <div class="product-modal__backdrop" data-inventory-add-close></div>
-        <section class="product-modal__dialog inventory-add-modal__dialog" role="dialog" aria-modal="true" aria-label="Add inventory item" tabindex="-1">
-            <button class="product-modal__close" type="button" aria-label="Close add item" data-inventory-add-close>x</button>
-            <form class="inventory-add-modal__box" method="post" action="inventory.php" enctype="multipart/form-data" data-inventory-add-form>
-                <input type="hidden" name="inventory_action" value="save_product" data-product-form-action>
-                <input type="hidden" name="add_product[id]" value="" data-add-product-id>
-                <input type="hidden" name="product_command_id" value="" data-product-command-id>
-
-                <div class="inventory-add-modal__layout">
-                    <aside class="inventory-database-panel" aria-label="Product database">
-                        <div class="inventory-database-frame">
-                            <div class="inventory-database-topline">
-                                <span data-product-database-count>loaded <?= count($modalProducts); ?> active products</span>
-                            </div>
-
-                            <div class="inventory-database-toolbar">
-                                <button class="inventory-modal-mini-button" type="button" data-product-database-refresh>Refresh Database</button>
-                                <label class="inventory-database-search">
-                                    <input type="search" placeholder="Search" autocomplete="off" data-product-database-search aria-label="Search products">
-                                </label>
-                            </div>
-
-                            <div class="inventory-database-table-shell">
-                                <div class="cart-header inventory-database-heading">
-                                    <button class="cart-heading inventory-database-heading-tab inventory-database-heading--id" type="button" data-product-sort="id">ID</button>
-                                    <button class="cart-heading inventory-database-heading-tab inventory-database-heading--name" type="button" data-product-sort="name">Name</button>
-                                    <button class="cart-heading inventory-database-heading-tab inventory-database-heading--stock" type="button" data-product-sort="stock">Stock</button>
-                                </div>
-
-                                <div class="inventory-database-list" data-product-database-list>
-                                    <?php foreach ($modalProducts as $product): ?>
-                                        <article
-                                            class="inventory-database-row"
-                                            data-product-row
-                                            data-product-id="<?= (int) $product['id']; ?>"
-                                            data-id="<?= (int) $product['id']; ?>"
-                                            data-name="<?= e(strtolower($product['name'])); ?>"
-                                            data-stock="<?= (int) $product['stock_quantity']; ?>"
-                                            data-search="<?= e(strtolower((int) $product['id'] . ' ' . $product['name'] . ' ' . $product['slug'] . ' ' . (int) $product['stock_quantity'])); ?>"
-                                        >
-                                            <button class="inventory-database-main" type="button" data-product-select="<?= (int) $product['id']; ?>">
-                                                <span class="inventory-database-id"><?= (int) $product['id']; ?></span>
-                                                <span class="inventory-database-copy">
-                                                    <span class="inventory-database-media" aria-hidden="true">
-                                                        <img src="<?= e($product['main_image']); ?>" alt="" onerror="this.onerror=null; this.src='assets/images/pc_1.png';">
-                                                    </span>
-                                                    <span class="inventory-database-name"><?= e($product['name']); ?></span>
-                                                    <span class="inventory-database-meta"><?= e($product['slug']); ?></span>
-                                                </span>
-                                                <span class="inventory-database-stock"><?= (int) $product['stock_quantity']; ?></span>
-                                            </button>
-                                            <span class="inventory-database-actions">
-                                                <button class="inventory-modal-mini-button" type="button" data-product-edit="<?= (int) $product['id']; ?>">
-                                                    <img class="inventory-database-action-icon" src="assets/images/pencil.png" alt="" aria-hidden="true">
-                                                    <span>Edit</span>
-                                                </button>
-                                                <button class="inventory-modal-mini-button" type="submit" formnovalidate data-product-command-action="duplicate_product" data-product-command-product="<?= (int) $product['id']; ?>">
-                                                    <img class="inventory-database-action-icon" src="assets/images/clone.png" alt="" aria-hidden="true">
-                                                    <span>Duplicate</span>
-                                                </button>
-                                                <button class="inventory-modal-mini-button inventory-modal-mini-button--danger" type="submit" formnovalidate data-product-command-action="delete_product" data-product-command-product="<?= (int) $product['id']; ?>">
-                                                    <img class="inventory-database-action-icon" src="assets/images/trash.png" alt="" aria-hidden="true">
-                                                    <span>Delete</span>
-                                                </button>
-                                            </span>
-                                        </article>
-                                    <?php endforeach; ?>
-                                </div>
-
-                                <div class="product-modal__scrollbar inventory-database-scrollbar" aria-hidden="true" data-product-database-scrollbar>
-                                    <div class="product-modal__scrollbar-thumb inventory-database-scrollbar-thumb" data-product-database-scrollbar-thumb></div>
-                                </div>
-                            </div>
-                        </div>
-                    </aside>
-
-                    <div class="inventory-add-modal__editor">
-                        <div class="inventory-add-modal__scroll-frame">
-                            <div class="inventory-add-modal__scroll" data-inventory-add-scroll>
-                        <section class="inventory-modal-section">
-                            <label class="inventory-modal-field">
-                                <span>Name</span>
-                                <input type="text" name="add_product[name]" maxlength="100" autocomplete="off" data-add-product-name required>
-                            </label>
-                            <div class="inventory-modal-field inventory-modal-field--with-action">
-                                <label>
-                                    <span>Slug</span>
-                                    <input type="text" name="add_product[slug]" maxlength="50" autocomplete="off" data-add-product-slug required>
-                                </label>
-                                <button class="inventory-modal-mini-button" type="button" data-add-product-generate-slug>Generate</button>
-                            </div>
-                            <label class="inventory-modal-field">
-                                <span>Price</span>
-                                <input type="text" name="add_product[price]" inputmode="decimal" autocomplete="off" data-add-product-price required>
-                            </label>
-                            <label class="inventory-modal-field">
-                                <span>Short description</span>
-                                <textarea name="add_product[short_description]" rows="4" required></textarea>
-                            </label>
-                            <label class="inventory-modal-field">
-                                <span>Main image</span>
-                                <input type="text" name="add_product[main_image]" value="assets/images/pc_noimage.png" autocomplete="off" data-add-product-image-path>
-                            </label>
-                            <div class="inventory-modal-inline-actions inventory-modal-image-actions">
-                                <label class="inventory-modal-mini-button inventory-modal-file-button">
-                                    Browse
-                                    <input type="file" name="add_product_image" accept=".png,.jpg,.jpeg,.gif,.webp" data-add-product-image-file>
-                                </label>
-                                <button class="inventory-modal-mini-button" type="button" data-add-product-placeholder>Use placeholder</button>
-                            </div>
-                            <div class="inventory-modal-inline-actions inventory-modal-active-row">
-                                <label class="inventory-modal-check">
-                                    <input type="checkbox" name="add_product[is_active]" value="1" checked>
-                                    <span>active storefront item</span>
-                                </label>
-                            </div>
-                        </section>
-
-                        <section class="inventory-modal-section">
-                            <div class="inventory-modal-stock-row">
-                                <span>Stock quantity</span>
-                                <div class="cart-quantity-control inventory-quantity-control inventory-modal-stock-control" aria-label="Stock quantity">
-                                    <button class="cart-quantity-button" type="button" data-add-product-stock-step="-1" aria-label="Decrease stock">&minus;</button>
-                                    <input class="cart-quantity-value inventory-quantity-value" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="3" autocomplete="off" name="add_product[stock_quantity]" value="1" data-add-product-stock aria-label="Stock quantity">
-                                    <button class="cart-quantity-button" type="button" data-add-product-stock-step="1" aria-label="Increase stock">+</button>
-                                </div>
-                            </div>
-                            <label class="inventory-modal-field">
-                                <span>Location</span>
-                                <input type="text" name="add_product[location]" value="Main workshop" maxlength="80" autocomplete="off">
-                            </label>
-                            <label class="inventory-modal-field">
-                                <span>Supplier</span>
-                                <input type="text" name="add_product[supplier]" value="FixerUpper Build Team" maxlength="120" autocomplete="off">
-                            </label>
-                            <h3 class="inventory-modal-subheading">Specs</h3>
-                            <div class="inventory-modal-specs" data-add-product-specs>
-                                <?php foreach (['Operating System', 'Processor', 'Graphics', 'Memory', 'Storage', 'Cooling', 'Case'] as $specLabel): ?>
-                                    <div class="inventory-modal-spec-row">
-                                        <input type="text" name="add_product[spec_label][]" value="<?= e($specLabel); ?>" maxlength="80" aria-label="Spec label">
-                                        <input type="text" name="add_product[spec_value][]" aria-label="Spec value">
-                                        <button class="inventory-modal-remove-spec" type="button" data-add-product-remove-spec aria-label="Remove spec row">Remove</button>
-                                    </div>
-                                <?php endforeach; ?>
-                            </div>
-                            <button class="inventory-modal-mini-button" type="button" data-add-product-add-spec>Add spec row</button>
-                        </section>
-                            </div>
-
-                            <div class="product-modal__scrollbar inventory-add-modal__scrollbar" aria-hidden="true" data-inventory-add-scrollbar>
-                                <div class="product-modal__scrollbar-thumb inventory-add-modal__scrollbar-thumb" data-inventory-add-scrollbar-thumb></div>
-                            </div>
-                        </div>
-
-                        <div class="inventory-add-modal__actions">
-                            <button class="inventory-action-button" type="button" data-add-product-clear>
-                                <span>clear form</span>
-                            </button>
-                            <button class="inventory-action-button inventory-save" type="submit">
-                                <span class="inventory-action-icon inventory-save-icon" aria-hidden="true"></span>
-                                <span>save product</span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </form>
-        </section>
-    </div>
+    <?php include __DIR__ . '/partials/inventory_add_modal.php'; ?>
 
     <script>
         window.fixerUpperInventoryProducts = <?= $modalProductsJson; ?>;

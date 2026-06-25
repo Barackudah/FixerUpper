@@ -9,8 +9,11 @@ require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/helpers.php';
 
 require_once __DIR__ . '/inventory_helpers.php';
+require_once __DIR__ . '/auth_helpers.php';
 
 ensureInventoryTable($conn);
+ensureCheckoutUsersTable($conn);
+ensureCheckoutAdmin($conn);
 
 // Clean the session cart so invalid ids and zero quantities never reach the query.
 function normalizeCart($cart)
@@ -29,7 +32,60 @@ function normalizeCart($cart)
     return $normalized;
 }
 
-$cartQuantities = normalizeCart($_SESSION['cart'] ?? []);
+$checkoutAuthMessage = '';
+$checkoutAuthTone = '';
+$checkoutModalShouldOpen = false;
+$checkoutAuthValues = [
+    'login_identifier' => '',
+    'register_username' => '',
+    'register_email' => '',
+];
+$checkoutAuthRedirect = '';
+$checkoutAuthFlash = $_SESSION['checkout_auth_flash'] ?? null;
+$checkoutCurrentUser = $_SESSION['checkout_user'] ?? null;
+unset($_SESSION['checkout_auth_flash']);
+
+if (is_array($checkoutAuthFlash)) {
+    $checkoutAuthMessage = (string) ($checkoutAuthFlash['message'] ?? '');
+    $checkoutAuthTone = (string) ($checkoutAuthFlash['tone'] ?? '');
+    $checkoutAuthValues = array_merge($checkoutAuthValues, (array) ($checkoutAuthFlash['values'] ?? []));
+
+    if ($checkoutAuthTone === 'error') {
+        $checkoutModalShouldOpen = true;
+    } else {
+        $checkoutAuthMessage = '';
+        $checkoutAuthTone = '';
+    }
+}
+
+if (isset($_GET['checkout']) && $_GET['checkout'] === '1' && !$checkoutCurrentUser) {
+    $checkoutModalShouldOpen = true;
+}
+
+$checkoutIsAdmin = checkoutUserIsAdmin($checkoutCurrentUser);
+$checkoutUnderConstruction = isset($_GET['under_construction']) && $_GET['under_construction'] === '1';
+
+$inventoryModalProducts = [];
+$inventoryModalProductsJson = '[]';
+$inventoryFormAction = 'inventory.php';
+$inventoryReturnUrl = 'cart.php';
+$modalEditProductId = 0;
+
+if ($checkoutIsAdmin) {
+    $inventoryModalProducts = inventoryModalProducts($conn);
+    $inventoryModalProductsJson = json_encode(
+        $inventoryModalProducts,
+        JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT
+    ) ?: '[]';
+}
+
+$checkoutAuthStatusMessage = $checkoutAuthMessage;
+$checkoutAuthStatusTone = $checkoutAuthTone;
+
+$sessionCart =& currentCart();
+$cartQuantities = normalizeCart($sessionCart);
+setCurrentCart($cartQuantities);
+$sessionCart =& currentCart();
 $cartProducts = [];
 $cartItems = [];
 
@@ -58,7 +114,7 @@ if ($cartQuantities) {
     foreach ($cartQuantities as $productId => $quantity) {
         if (!isset($cartProducts[$productId])) {
             // Skip stale session rows that point to products no longer available.
-            unset($_SESSION['cart'][$productId]);
+            unset($sessionCart[$productId]);
             continue;
         }
 
@@ -76,10 +132,12 @@ if ($cartQuantities) {
 
 // The badge counts unique cart products, so adding the same product twice does not move it.
 $cartCount = count($cartItems);
+$cartHasVisibleItems = $cartItems && !$checkoutUnderConstruction;
 
 // Build a path-safe AJAX endpoint so the cart still works from /fixerupper.
 $basePath = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'])), '/');
 $updateCartEndpoint = ($basePath === '' ? '' : $basePath) . '/update_cart.php';
+$checkoutUnderConstructionEndpoint = ($basePath === '' ? '' : $basePath) . '/cart.php?under_construction=1';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -90,7 +148,7 @@ $updateCartEndpoint = ($basePath === '' ? '' : $basePath) . '/update_cart.php';
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500&family=Teko:wght@600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/style.css?v=<?= filemtime(__DIR__ . '/assets/css/style.css'); ?>">
 </head>
-<body class="cart-body<?= $cartItems ? ' cart-body--filled' : ' cart-body--empty'; ?>">
+<body class="cart-body<?= $cartHasVisibleItems ? ' cart-body--filled' : ' cart-body--empty'; ?><?= $checkoutModalShouldOpen ? ' modal-open' : ''; ?>">
     <!--
         Cart navigation mirrors the homepage header, but marks the cart link as current
         and shows the live cart badge from the server-rendered cart count.
@@ -98,6 +156,9 @@ $updateCartEndpoint = ($basePath === '' ? '' : $basePath) . '/update_cart.php';
     <nav>
         <!-- Brand logo links back to the storefront. -->
         <div class="nav-logo">
+            <?php if ($checkoutCurrentUser): ?>
+                <p class="nav-user-status">hi, <?= e($checkoutCurrentUser['username']); ?></p>
+            <?php endif; ?>
             <a href="index.php" aria-label="FIXERUPPER home">
                 <img src="assets/images/logo.png" alt="FIXERUPPER Logo">
             </a>
@@ -106,18 +167,24 @@ $updateCartEndpoint = ($basePath === '' ? '' : $basePath) . '/update_cart.php';
         <!-- Main navigation keeps the same destinations as the homepage. -->
         <div class="nav-menu">
             <a href="index.php">HOME</a>
-            <a href="index.php#about">ABOUT US</a>
-            <a href="index.php#contacts">CONTACTS</a>
+            <a href="cart.php?under_construction=1">ABOUT US</a>
+            <a href="cart.php?under_construction=1">CONTACTS</a>
+            <?php if ($checkoutIsAdmin): ?>
+                <a href="#manage" data-inventory-add-open>MANAGE</a>
+            <?php endif; ?>
         </div>
 
         <!-- Action icons remain available on the cart page for consistent navigation. -->
         <div class="nav-actions">
-            <a href="#login" title="Login">
-                <img src="assets/images/login_icon.png" alt="Login">
-            </a>
-            <a href="#logout" title="Logout">
-                <img src="assets/images/logout_icon.png" alt="Logout">
-            </a>
+            <?php if ($checkoutCurrentUser): ?>
+                <a href="logout.php" title="Logout" aria-label="Logout">
+                    <img src="assets/images/logout_icon.png" alt="Logout">
+                </a>
+            <?php else: ?>
+                <a href="cart.php?checkout=1" title="Login" aria-label="Login">
+                    <img src="assets/images/login_icon.png" alt="Login">
+                </a>
+            <?php endif; ?>
             <a href="cart.php" title="Shopping Cart" aria-current="page">
                 <img src="assets/images/shoppingcard_icon.png" alt="Cart">
                 <span class="cart-badge" aria-live="polite"><?= $cartCount > 0 ? (int) $cartCount : ''; ?></span>
@@ -132,7 +199,9 @@ $updateCartEndpoint = ($basePath === '' ? '' : $basePath) . '/update_cart.php';
         <!-- The cart table is rendered only when the visitor has active cart items. -->
         <section class="cart-page" aria-label="Shopping cart">
             <p class="cart-message" data-cart-message role="status" aria-live="polite"></p>
-            <?php if (!$cartItems): ?>
+            <?php if ($checkoutUnderConstruction): ?>
+                <p class="cart-empty">page is under construction.</p>
+            <?php elseif (!$cartItems): ?>
                 <!-- Empty-state fallback shown by PHP and recreated by JavaScript after final removal. -->
                 <p class="cart-empty">your cart is empty.</p>
             <?php else: ?>
@@ -197,9 +266,16 @@ $updateCartEndpoint = ($basePath === '' ? '' : $basePath) . '/update_cart.php';
                         </article>
                     <?php endforeach; ?>
 
-                    <div class="cart-checkout-summary">
-                        <button class="cart-checkout-button" type="button">PROCEED TO CHECKOUT</button>
-                    </div>
+                    <button
+                        class="cart-checkout-summary"
+                        type="button"
+                        data-checkout-trigger
+                        data-checkout-authenticated="<?= $checkoutCurrentUser ? '1' : '0'; ?>"
+                        data-checkout-redirect="<?= e($checkoutUnderConstructionEndpoint); ?>"
+                    >
+                        <img class="cart-checkout-badge" src="assets/images/checkout.svg" alt="" aria-hidden="true">
+                        <span class="cart-checkout-button">PROCEED TO CHECKOUT</span>
+                    </button>
                 </div>
             <?php endif; ?>
         </section>
@@ -294,10 +370,96 @@ $updateCartEndpoint = ($basePath === '' ? '' : $basePath) . '/update_cart.php';
         </footer>
     </main>
 
+    <?php if (!$checkoutCurrentUser): ?>
+        <div class="checkout-modal<?= $checkoutModalShouldOpen ? ' is-open' : ''; ?>" id="checkout-modal" aria-hidden="<?= $checkoutModalShouldOpen ? 'false' : 'true'; ?>">
+            <div class="checkout-modal__backdrop" data-checkout-modal-close></div>
+            <section class="checkout-modal__dialog" role="dialog" aria-modal="true" aria-label="Checkout">
+                <button class="checkout-modal__close" type="button" aria-label="Close checkout" data-checkout-modal-close>x</button>
+                <div class="checkout-modal__panel">
+                    <?php if ($checkoutAuthStatusMessage !== ''): ?>
+                        <p
+                            class="checkout-auth-message is-visible"
+                            data-checkout-auth-message
+                            data-tone="<?= e($checkoutAuthStatusTone); ?>"
+                            data-checkout-auth-redirect="<?= e($checkoutAuthRedirect); ?>"
+                            role="status"
+                            aria-live="polite"
+                        >
+                            <?= e($checkoutAuthStatusMessage); ?>
+                        </p>
+                    <?php endif; ?>
+
+                    <form class="checkout-auth-card" method="post" action="login.php" data-checkout-auth-form="login">
+                        <input type="hidden" name="checkout_auth_action" value="login">
+                        <section class="inventory-modal-section checkout-auth-section">
+                            <h2 class="checkout-auth-title">sign in</h2>
+                            <label class="inventory-modal-field">
+                                <span>Email or username</span>
+                                <input type="text" name="login_identifier" maxlength="100" autocomplete="username" value="<?= e($checkoutAuthValues['login_identifier']); ?>" required>
+                            </label>
+                            <label class="inventory-modal-field">
+                                <span>Password</span>
+                                <input type="password" name="login_password" autocomplete="current-password" required>
+                            </label>
+                        </section>
+                        <div class="checkout-auth-actions">
+                            <button class="inventory-action-button" type="submit">
+                                <span>sign in</span>
+                            </button>
+                        </div>
+                    </form>
+
+                    <div class="checkout-auth-divider" aria-hidden="true">
+                        <span>or</span>
+                    </div>
+
+                    <form class="checkout-auth-card" method="post" action="login.php" data-checkout-auth-form="register">
+                        <input type="hidden" name="checkout_auth_action" value="register">
+                        <section class="inventory-modal-section checkout-auth-section">
+                            <h2 class="checkout-auth-title">create account</h2>
+                            <label class="inventory-modal-field">
+                                <span>Username</span>
+                                <input type="text" name="register_username" maxlength="50" autocomplete="username" value="<?= e($checkoutAuthValues['register_username']); ?>" required>
+                            </label>
+                            <label class="inventory-modal-field">
+                                <span>Email</span>
+                                <input type="email" name="register_email" maxlength="100" autocomplete="email" value="<?= e($checkoutAuthValues['register_email']); ?>" required>
+                            </label>
+                            <label class="inventory-modal-field">
+                                <span>Password</span>
+                                <input type="password" name="register_password" autocomplete="new-password" required>
+                            </label>
+                            <label class="inventory-modal-field">
+                                <span>Confirm password</span>
+                                <input type="password" name="register_password_confirm" autocomplete="new-password" required>
+                            </label>
+                        </section>
+                        <div class="checkout-auth-actions">
+                            <button class="inventory-action-button" type="submit">
+                                <span>create account</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </section>
+        </div>
+    <?php endif; ?>
+
+    <?php if ($checkoutIsAdmin): ?>
+        <?php include __DIR__ . '/partials/inventory_add_modal.php'; ?>
+    <?php endif; ?>
+
     <!-- Expose the update endpoint before cart.js initializes. -->
     <script>
         window.fixerupperUpdateCartEndpoint = "<?= e($updateCartEndpoint); ?>";
     </script>
+    <?php if ($checkoutIsAdmin): ?>
+        <script>
+            window.fixerUpperInventoryProducts = <?= $inventoryModalProductsJson; ?>;
+            window.fixerUpperInventoryEditProductId = <?= (int) $modalEditProductId; ?>;
+        </script>
+        <script src="assets/js/inventory.js?v=<?= filemtime(__DIR__ . '/assets/js/inventory.js'); ?>"></script>
+    <?php endif; ?>
     <script src="assets/js/cart.js?v=<?= filemtime(__DIR__ . '/assets/js/cart.js'); ?>"></script>
 </body>
 </html>
