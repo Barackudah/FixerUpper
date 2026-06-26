@@ -93,7 +93,7 @@ CREATE TABLE IF NOT EXISTS product_specs (
         ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Orders are not wired to checkout yet, but the structure is ready for future payment flow.
+-- Orders are created by the checkout confirmation flow after login/register.
 CREATE TABLE IF NOT EXISTS orders (
     id INT UNSIGNED NOT NULL AUTO_INCREMENT,
     user_id INT UNSIGNED NOT NULL,

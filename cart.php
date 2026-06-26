@@ -140,9 +140,15 @@ if ($cartQuantities) {
 $cartCount = count($cartItems);
 $cartHasVisibleItems = $cartItems && !$checkoutUnderConstruction;
 
+if (isset($_GET['checkout']) && $_GET['checkout'] === '1' && $checkoutCurrentUser && $cartItems) {
+    header('Location: confirm_order.php');
+    exit;
+}
+
 // Build a path-safe AJAX endpoint so the cart still works from /fixerupper.
 $basePath = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'])), '/');
 $updateCartEndpoint = ($basePath === '' ? '' : $basePath) . '/update_cart.php';
+$checkoutConfirmEndpoint = ($basePath === '' ? '' : $basePath) . '/confirm_order.php';
 $checkoutUnderConstructionEndpoint = ($basePath === '' ? '' : $basePath) . '/cart.php?under_construction=1';
 ?>
 <!DOCTYPE html>
@@ -277,7 +283,7 @@ $checkoutUnderConstructionEndpoint = ($basePath === '' ? '' : $basePath) . '/car
                         type="button"
                         data-checkout-trigger
                         data-checkout-authenticated="<?= $checkoutCurrentUser ? '1' : '0'; ?>"
-                        data-checkout-redirect="<?= e($checkoutUnderConstructionEndpoint); ?>"
+                        data-checkout-redirect="<?= e($checkoutConfirmEndpoint); ?>"
                     >
                         <img class="cart-checkout-badge" src="assets/images/checkout.svg" alt="" aria-hidden="true">
                         <span class="cart-checkout-button">PROCEED TO CHECKOUT</span>

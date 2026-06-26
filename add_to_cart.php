@@ -1,5 +1,5 @@
 <?php
-// The cart is stored in the visitor's PHP session until checkout is implemented.
+// The cart is stored in the visitor's PHP session until the order is confirmed.
 require_once __DIR__ . '/session.php';
 
 require_once __DIR__ . '/config.php';

@@ -15,9 +15,10 @@ function redirectToCheckout()
     exit;
 }
 
-function redirectToCart()
+function redirectAfterAuth()
 {
-    header('Location: cart.php');
+    $cart = normalizeSessionCartItems(currentCart());
+    header('Location: ' . ($cart ? 'confirm_order.php' : 'cart.php'));
     exit;
 }
 
@@ -54,7 +55,7 @@ if ($checkoutAction === 'login') {
     checkoutSetUserSession($user);
     mergeGuestCartIntoUserCart($conn, (int) $user['id']);
     unset($_SESSION['checkout_auth_flash']);
-    redirectToCart();
+    redirectAfterAuth();
 }
 
 if ($checkoutAction === 'register') {
@@ -124,7 +125,7 @@ if ($checkoutAction === 'register') {
 
     mergeGuestCartIntoUserCart($conn, $newUserId);
     unset($_SESSION['checkout_auth_flash']);
-    redirectToCart();
+    redirectAfterAuth();
 }
 
 setCheckoutAuthFlash('choose sign in or create account.', 'error');

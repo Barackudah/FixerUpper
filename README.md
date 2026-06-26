@@ -57,6 +57,9 @@ without editing SQL manually.
   web inventory modal.
 - Checkout sign-in and create-account modal backed by the PHP users table.
 - User-specific session carts, with guest cart items merged after sign in.
+- Confirm-order screen that creates completed orders and clears the cart.
+- Order-complete confirmation screen using the shared storefront visual system.
+- Shared advertising carousel partial reused across cart and checkout screens.
 - Admin-only `MANAGE` navigation action that opens the inventory product modal.
 - Inventory save flow with edited-field highlighting and system messages.
 - Cart quantity limits based on available inventory.
@@ -87,7 +90,8 @@ The database schema is stored in `database/fixerupper.sql`.
   Memory and Storage.
 - `users` stores hashed login credentials and the `user`/`admin` role used by
   the checkout flow, web inventory manager and desktop app.
-- `orders` and `order_items` are prepared for future checkout work.
+- `orders` and `order_items` store completed checkout submissions and the
+  product lines captured at confirmation time.
 
 The seeded database creates six active PC products with inventory, one image per
 product and modal specification rows. The SQL seed is idempotent, so it can be
@@ -230,8 +234,10 @@ fixerupper/
 |   |   |-- inventory-modal-tablet.png
 |   |   |-- inventory-modal-mobile.png
 |   |   |-- more-info-screenshot.png
-|   |   `-- shopping-cart-screenshot.png
+|   |   |-- shopping-cart-screenshot.png
+|   |   `-- checkmark.png
 |   `-- js/
+|       `-- checkout-confirm.js
 |-- database/fixerupper.sql
 |-- docs/
 |   |-- screenshots/
@@ -241,8 +247,14 @@ fixerupper/
 |-- tools/
 |   |-- fixerupper_inventory_desktop.py
 |   `-- launch_inventory_desktop.bat
+|-- partials/
+|   |-- advertising_carousel.php
+|   `-- inventory_add_modal.php
 |-- index.php
 |-- cart.php
+|-- confirm_order.php
+|-- order_complete.php
+|-- checkout_helpers.php
 |-- inventory.php
 |-- add_to_cart.php
 `-- update_cart.php
